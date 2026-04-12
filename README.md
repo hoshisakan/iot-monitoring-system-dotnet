@@ -27,5 +27,3 @@
 4. 韌體燒錄與 **Broker**／**TLS** 憑證對齊見 `app/firmware/README.md`。
 
 ---
-
-本文件以繁體中文（台灣）撰寫；技術專有名詞（如 **Framework**、**Middleware**、**Repository Pattern**、**Dependency Injection**）保留英文慣用寫法。
