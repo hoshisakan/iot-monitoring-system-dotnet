@@ -1,0 +1,163 @@
+services:
+    nginx:
+        build:
+            context: .
+            dockerfile: conf/nginx/Dockerfile
+            args:
+                - NGINX_BASE_VERSION=${NGINX_BASE_VERSION}
+                - NODE_BASE_VERSION=${NODE_BASE_VERSION}
+        image: ${CONTAINER_AUTHOR}/${PROJECT_NAME}/frontend:${FRONTEND_APP_VERSION}
+        container_name: ${PROJECT_NAME}_nginx
+        # 本機跑後端時，default.conf upstream 可改為 host.docker.internal:8080，讓 Nginx 連到宿主機
+        extra_hosts:
+            - "host.docker.internal:host-gateway"
+        ports:
+            - ${NGINX_HTTP_OUTSIDE_PORT}:${NGINX_HTTP_INSIDE_PORT}
+            - ${NGINX_HTTPS_OUTSIDE_PORT}:${NGINX_HTTPS_INSIDE_PORT}
+        volumes:
+            - ./conf/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+            - ./conf/nginx/certs/${NGINX_CERTS_DIR}:/etc/nginx/certs:ro
+            - ./logs/nginx:/var/log/nginx
+        networks:
+            iot_monitoring_system_dotnet:
+                ipv4_address: ${NGINX_HOST_IP}
+        depends_on:
+            backend_api:
+                condition: service_started
+        restart: always
+
+    backend_api:
+        build:
+            context: ./app/backend
+            dockerfile: Dockerfile
+        image: ${CONTAINER_AUTHOR}/${PROJECT_NAME}/backend_api:${BACKEND_API_VERSION}
+        container_name: ${PROJECT_NAME}_backend_api
+        ports:
+            - ${BACKEND_API_OUTSIDE_PORT}:${BACKEND_API_INSIDE_PORT}
+        environment:
+            TZ: ${BACKEND_API_TIME_ZONE}
+            ASPNETCORE_URLS: "http://+:${BACKEND_API_INSIDE_PORT}"
+            ASPNETCORE_ENVIRONMENT: ${BACKEND_API_ASPNETCORE_ENVIRONMENT}
+            ConnectionStrings__Default: "Host=${DATABASE_HOST};Port=${POSTGRES_INSIDE_PORT};Database=${BACKEND_API_DATABASE_NAME};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+            # 對應 appsettings 之 Database:DefaultSchema（EF Core 表所屬 schema）
+            Database__DefaultSchema: ${BACKEND_API_DATABASE_DEFAULT_SCHEMA:-dev}
+            Mqtt__Host: ${BACKEND_API_MOSQUITTO_HOST_NAME}
+            Mqtt__Port: ${MOSQUITTO_TLS_INSIDE_PORT}
+            Mqtt__Username: ${MOSQUITTO_USERNAME}
+            Mqtt__Password: ${MOSQUITTO_PASSWORD}
+            Mqtt__UseTls: "true"
+            Mqtt__TlsCaCertificatePath: /mqtt-certs/ca.crt
+            Mqtt__TlsAllowUntrustedCertificate: "false"
+            # 容器內無 Docker socket 時關閉；若掛載 /var/run/docker.sock 可改為 true
+            Docker__Enabled: "true"
+        volumes:
+            - ./conf/mqtt_broker/certs/${MOSQUITTO_CERTS_DIR}:/mqtt-certs:ro
+            - /var/run/docker.sock:/var/run/docker.sock:ro
+            - ./logs/backend_api:/app/logs
+        depends_on:
+            postgresql:
+                condition: service_healthy
+            mqtt_broker:
+                condition: service_started
+        networks:
+            iot_monitoring_system_dotnet:
+                ipv4_address: ${BACKEND_API_HOST_IP}
+        restart: always
+
+    mqtt_broker:
+        build:
+            context: ./conf/mqtt_broker
+            dockerfile: Dockerfile
+            args:
+                - MOSQUITTO_VERSION=${MOSQUITTO_VERSION}
+        image: ${CONTAINER_AUTHOR}/${PROJECT_NAME}/mqtt_broker:${MOSQUITTO_VERSION}
+        container_name: ${PROJECT_NAME}_mqtt_broker
+        environment:
+            - TZ=${MOSQUITTO_TIME_ZONE}
+            - MOSQUITTO_USERNAME=${MOSQUITTO_USERNAME}
+            - MOSQUITTO_PASSWORD=${MOSQUITTO_PASSWORD}
+            - MOSQUITTO_LOGFILENAME=${MOSQUITTO_LOGFILENAME}
+        volumes:
+            - ./conf/mqtt_broker/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+            - ./logs/mqtt_broker:/mosquitto/log
+            - ./conf/mqtt_broker/docker-entrypoint.sh:/docker-entrypoint.sh
+            # 生產環境使用 server 資料夾中的憑證，開發環境使用 local 資料夾中的憑證
+            - ./conf/mqtt_broker/certs/${MOSQUITTO_CERTS_DIR}:/mosquitto/config/certs:rw
+        ports:
+            - ${MOSQUITTO_OUTSIDE_PORT}:${MOSQUITTO_INSIDE_PORT}
+            - ${MOSQUITTO_TLS_OUTSIDE_PORT}:${MOSQUITTO_TLS_INSIDE_PORT}
+            - ${MOSQUITTO_WEBSOCKET_OUTSIDE_PORT}:${MOSQUITTO_WEBSOCKET_INSIDE_PORT}
+            - ${MOSQUITTO_HTTPS_WEBSOCKET_OUTSIDE_PORT}:${MOSQUITTO_HTTPS_WEBSOCKET_INSIDE_PORT}
+        networks:
+            iot_monitoring_system_dotnet:
+                ipv4_address: ${MOSQUITTO_HOST_IP}
+        restart: always
+
+    postgresql:
+        build:
+            context: ./conf/postgresql
+            dockerfile: Dockerfile
+            args:
+                - POSTGRES_VERSION=${POSTGRES_VERSION}
+                - POSTGRES_LANG_NAME=${POSTGRES_LANG_NAME}
+                - POSTGRES_LANG_INPUTFILE=${POSTGRES_LANG_INPUTFILE}
+                - POSTGRES_LANG_CHARMAP=${POSTGRES_LANG_CHARMAP}
+        image: ${CONTAINER_AUTHOR}/${PROJECT_NAME}/postgresql:${POSTGRES_VERSION}
+        container_name: ${PROJECT_NAME}_postgresql
+        environment:
+            - DATABASE_HOST=${DATABASE_HOST}
+            - POSTGRES_USER=${POSTGRES_USER}
+            - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+            - POSTGRES_DB=${POSTGRES_DB}
+            - PGDATA=${PGDATA}
+            - TZ=${POSTGRES_TIME_ZONE}
+            - POSTGRES_LANG_NAME=${POSTGRES_LANG_NAME}
+        volumes:
+            - ./data/postgresql/pgdata:${PGDATA}
+            - ./data/postgresql/pgdata_backup:${POSTGRES_DATA_BACKUP_PATH}
+        ports:
+            - ${POSTGRES_OUTSIDE_PORT}:${POSTGRES_INSIDE_PORT}
+        networks:
+            iot_monitoring_system_dotnet:
+                ipv4_address: ${POSTGRES_HOST_IP}
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+        restart: always
+
+    db_adminer:
+        build:
+          context: ./conf/pgadmin
+          dockerfile: Dockerfile
+          args:
+            - POSTGRES_ADMINER_VERSION=${POSTGRES_ADMINER_VERSION}
+        image: ${CONTAINER_AUTHOR}/${PROJECT_NAME}/pgadmin:${POSTGRES_ADMINER_VERSION}
+        container_name: ${PROJECT_NAME}_pgadmin
+        environment:
+          - PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL}
+          - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD}
+        depends_on:
+            postgresql:
+                condition: service_healthy
+        volumes:
+          - db_adminer:/var/lib/pgadmin
+        ports:
+          - ${PGADMIN_OUTSIDE_PORT}:${PGADMIN_INSIDE_PORT}
+        networks:
+          iot_monitoring_system_dotnet:
+            ipv4_address: ${PGADMIN_HOST_IP}
+        restart: always
+
+networks:
+    iot_monitoring_system_dotnet:
+      name: ${NETWORK_NAME}
+      driver: bridge
+      ipam:
+        config:
+          - subnet: ${MONITOR_SYSTEM_SUBNET}
+            gateway: ${MONITOR_SYSTEM_GATEWAY}
+
+volumes:
+    db_adminer:

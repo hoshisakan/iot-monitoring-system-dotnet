@@ -1,0 +1,227 @@
+{
+  "info": {
+    "_postman_id": "7f2c9e1a-4b0d-4c8e-9f3a-1260d4e8b901",
+    "name": "Pico2WH Pi5 IIoT API (.NET)",
+    "description": "## 對齊後端 `Pico2WH.Pi5.IIoT.Api`（MediatR + JWT）\n\n### Collection 變數\n| 變數 | 說明 |\n|------|------|\n| `base_url` | API 根位址，**不要**結尾斜線。本機預設 `http://localhost:5163`（見 `launchSettings.json`） |\n| `sample_device_id` | 查詢用裝置 ID（須與資料庫內資料一致時才有內容） |\n| `sample_site_id` | 與 JWT `tenant_scope` / device control 的 `site_id` 對齊 |\n| `access_token` / `refresh_token` | 由 **auth → login** 自動寫入 |\n\n### 測試順序建議\n1. 設定 `base_url`；確認 DB 已 migrate，且 `dev.users` 有測試帳（密碼須符合專案 PasswordHasher）。\n2. **auth → login**。\n3. 其餘需 Bearer 的請求會用 `{{access_token}}`。\n4. **system**、**device** 需 **admin** JWT。\n\n### 備註\n- JSON 請求／回應為 **snake_case**（Api `JsonNamingPolicy.SnakeCaseLower`）。\n- 自簽 HTTPS 時請在 Postman 關閉 SSL 驗證（僅開發環境）。\n- 舊版 `iot-monitoring-system.postman_collection.json` 中的 `/hello`、customer 路由等**未**包含於此集合（與現有 .NET Api 不符）。",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:5163" },
+    { "key": "sample_device_id", "value": "pico_wh_1" },
+    { "key": "sample_site_id", "value": "site1" },
+    { "key": "access_token", "value": "" },
+    { "key": "refresh_token", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "auth",
+      "description": "匿名。login 成功後腳本會寫入 `access_token`、`refresh_token`。預設 body 請改為你的測試帳密。",
+      "item": [
+        {
+          "name": "login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "try {",
+                  "  var j = pm.response.json();",
+                  "  pm.test('has access_token', function () {",
+                  "    pm.expect(j.access_token).to.be.a('string').and.not.empty;",
+                  "  });",
+                  "  if (j.access_token) {",
+                  "    pm.collectionVariables.set('access_token', j.access_token);",
+                  "    try { pm.environment.set('access_token', j.access_token); } catch (e) {}",
+                  "  }",
+                  "  if (j.refresh_token) {",
+                  "    pm.collectionVariables.set('refresh_token', j.refresh_token);",
+                  "    try { pm.environment.set('refresh_token', j.refresh_token); } catch (e) {}",
+                  "  }",
+                  "} catch (e) { console.log(e); }"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"Test123!\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{base_url}}/api/v1/auth/login",
+            "description": "Body 欄位：`username`、`password`（snake_case）。"
+          },
+          "response": []
+        },
+        {
+          "name": "refresh",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "try {",
+                  "  var j = pm.response.json();",
+                  "  if (j.access_token) {",
+                  "    pm.collectionVariables.set('access_token', j.access_token);",
+                  "    try { pm.environment.set('access_token', j.access_token); } catch (e) {}",
+                  "  }",
+                  "  if (j.refresh_token) {",
+                  "    pm.collectionVariables.set('refresh_token', j.refresh_token);",
+                  "    try { pm.environment.set('refresh_token', j.refresh_token); } catch (e) {}",
+                  "  }",
+                  "} catch (e) { console.log(e); }"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{base_url}}/api/v1/auth/refresh"
+          },
+          "response": []
+        },
+        {
+          "name": "logout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{base_url}}/api/v1/auth/logout"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "telemetry",
+      "description": "需 Bearer。`device_id` 必填。",
+      "item": [
+        {
+          "name": "list (GET)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": "{{base_url}}/api/v1/telemetry?device_id={{sample_device_id}}&page=1&page_size=10",
+            "description": "可選 query：`from`、`to`（ISO 8601）；省略時 Api 使用預設時間範圍。"
+          },
+          "response": []
+        },
+        {
+          "name": "series (GET)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": "{{base_url}}/api/v1/telemetry/series?device_id={{sample_device_id}}&from=2026-01-01T00:00:00Z&to=2026-01-02T00:00:00Z&metrics=temperature_c,lux",
+            "description": "`from`/`to` 可為 ISO 字串或 Unix 毫秒。`metrics` 為逗號分隔白名單。可選 `max_points`。"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "logs",
+      "description": "需 Bearer。channel：`telemetry` | `ui-events` | `status`；level：`debug` | `info` | `warn` | `error`。",
+      "item": [
+        {
+          "name": "list (GET)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": "{{base_url}}/api/v1/logs?page=1&page_size=10"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "ui-events",
+      "description": "需 Bearer。`device_id` 必填。",
+      "item": [
+        {
+          "name": "list (GET)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": "{{base_url}}/api/v1/ui-events?device_id={{sample_device_id}}&site_id={{sample_site_id}}&page=1&page_size=10"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "system (admin)",
+      "description": "需 **role=admin** JWT。",
+      "item": [
+        {
+          "name": "status (GET)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "try {",
+                  "  var j = pm.response.json();",
+                  "  pm.test('has items array', function () {",
+                  "    pm.expect(j.items).to.be.an('array');",
+                  "  });",
+                  "} catch (e) { console.log(e); }"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": "{{base_url}}/api/v1/system/status?include_stopped=true",
+            "description": "回傳 `items`（snake_case 欄位如 `container_name`）。Docker 未啟用時仍可能 200 但內容為空。"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "device (admin)",
+      "description": "需 **admin** JWT。僅支援 `set_pwm`，`value` 0–100。",
+      "item": [
+        {
+          "name": "control (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Request-Id", "value": "{{$guid}}", "disabled": true }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"device_id\": \"{{sample_device_id}}\",\n  \"command\": \"set_pwm\",\n  \"value\": 50,\n  \"site_id\": \"{{sample_site_id}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{base_url}}/api/v1/device/control",
+            "description": "成功為 **202 Accepted**。`site_id` 可省略若 JWT 含 `tenant_scope`。"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

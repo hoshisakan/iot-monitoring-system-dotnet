@@ -1,0 +1,91 @@
+# Pico2WH.Pi5.IIoT — EF Core 資料庫遷移指令（PostgreSQL）
+# 在儲存庫根目錄執行時，請先 cd 到下方工作目錄。
+#
+# 前置：
+# - 已安裝 .NET 8 SDK
+# - PostgreSQL 可連線；ConnectionStrings:Default 於 appsettings 或環境變數正確
+# - 若尚未安裝 CLI：dotnet tool install --global dotnet-ef
+
+# ---------------------------------------------------------------------------
+# 工作目錄
+# ---------------------------------------------------------------------------
+cd app/backend/src
+
+# ---------------------------------------------------------------------------
+# 新增遷移（將 MigrationName 改成實際名稱，例如 AddUserIndex）
+# 預設輸出至 Migrations/Dev（與現有遷移鏈一致；路徑相對於 Infrastructure 專案根目錄）
+# ---------------------------------------------------------------------------
+dotnet ef migrations add MigrationName \
+  --project Pico2WH.Pi5.IIoT.Infrastructure/Pico2WH.Pi5.IIoT.Infrastructure.csproj \
+  --startup-project Pico2WH.Pi5.IIoT.Api/Pico2WH.Pi5.IIoT.Api.csproj \
+  --output-dir Migrations/Dev
+
+# 單行（複製貼上即可，記得替換 MigrationName）：
+# dotnet ef migrations add MigrationName --project Pico2WH.Pi5.IIoT.Infrastructure/Pico2WH.Pi5.IIoT.Infrastructure.csproj --startup-project Pico2WH.Pi5.IIoT.Api/Pico2WH.Pi5.IIoT.Api.csproj --output-dir Migrations/Dev
+
+# ---------------------------------------------------------------------------
+# 選用：prod schema 設計時，將新遷移產生至 Migrations/Prod
+# （請先 export Database__DefaultSchema=prod；說明見同層 README.md）
+# ---------------------------------------------------------------------------
+# dotnet ef migrations add MigrationName \
+#   --project Pico2WH.Pi5.IIoT.Infrastructure/Pico2WH.Pi5.IIoT.Infrastructure.csproj \
+#   --startup-project Pico2WH.Pi5.IIoT.Api/Pico2WH.Pi5.IIoT.Api.csproj \
+#   --output-dir Migrations/Prod
+
+# ---------------------------------------------------------------------------
+# 套用遷移到資料庫
+# ---------------------------------------------------------------------------
+dotnet ef database update \
+  --project Pico2WH.Pi5.IIoT.Infrastructure/Pico2WH.Pi5.IIoT.Infrastructure.csproj \
+  --startup-project Pico2WH.Pi5.IIoT.Api/Pico2WH.Pi5.IIoT.Api.csproj
+
+# 單行：
+# dotnet ef database update --project Pico2WH.Pi5.IIoT.Infrastructure/Pico2WH.Pi5.IIoT.Infrastructure.csproj --startup-project Pico2WH.Pi5.IIoT.Api/Pico2WH.Pi5.IIoT.Api.csproj
+
+# ---------------------------------------------------------------------------
+# 選用：列出遷移
+# ---------------------------------------------------------------------------
+dotnet ef migrations list \
+  --project Pico2WH.Pi5.IIoT.Infrastructure/Pico2WH.Pi5.IIoT.Infrastructure.csproj \
+  --startup-project Pico2WH.Pi5.IIoT.Api/Pico2WH.Pi5.IIoT.Api.csproj
+
+# ---------------------------------------------------------------------------
+# 選用：還原到指定遷移（MigrationId 換成實際名稱；0 表示全部卸載）
+# ---------------------------------------------------------------------------
+dotnet ef database update MigrationId \
+  --project Pico2WH.Pi5.IIoT.Infrastructure/Pico2WH.Pi5.IIoT.Infrastructure.csproj \
+  --startup-project Pico2WH.Pi5.IIoT.Api/Pico2WH.Pi5.IIoT.Api.csproj
+
+# ---------------------------------------------------------------------------
+# 選用：覆寫連線字串（bash）
+# ---------------------------------------------------------------------------
+# export ConnectionStrings__Default="Host=127.0.0.1;Port=5432;Database=pico2wh_test;Username=root;Password=***"
+# dotnet ef database update --project Pico2WH.Pi5.IIoT.Infrastructure/Pico2WH.Pi5.IIoT.Infrastructure.csproj --startup-project Pico2WH.Pi5.IIoT.Api/Pico2WH.Pi5.IIoT.Api.csproj
+
+# ---------------------------------------------------------------------------
+# dev schema：產生遷移並套用（與 Api 的 appsettings.Development.json 中 Database:DefaultSchema=dev 對齊）
+# ---------------------------------------------------------------------------
+# 方式 A — 讀取 Development 設定（建議）：確保已設定 ASPNETCORE_ENVIRONMENT，使載入 appsettings.Development.json
+export ASPNETCORE_ENVIRONMENT=Development
+cd app/backend/src
+dotnet ef migrations add InitialCreate \
+  --project Pico2WH.Pi5.IIoT.Infrastructure/Pico2WH.Pi5.IIoT.Infrastructure.csproj \
+  --startup-project Pico2WH.Pi5.IIoT.Api/Pico2WH.Pi5.IIoT.Api.csproj \
+  --output-dir Migrations/Dev
+dotnet ef database update \
+  --project Pico2WH.Pi5.IIoT.Infrastructure/Pico2WH.Pi5.IIoT.Infrastructure.csproj \
+  --startup-project Pico2WH.Pi5.IIoT.Api/Pico2WH.Pi5.IIoT.Api.csproj
+
+# 方式 B — 不依賴環境名稱，直接覆寫 schema（效果同 Database:DefaultSchema=dev）
+# export Database__DefaultSchema=dev
+# cd app/backend/src
+# dotnet ef migrations add InitialCreate \
+#   --project Pico2WH.Pi5.IIoT.Infrastructure/Pico2WH.Pi5.IIoT.Infrastructure.csproj \
+#   --startup-project Pico2WH.Pi5.IIoT.Api/Pico2WH.Pi5.IIoT.Api.csproj \
+#   --output-dir Migrations/Dev
+# dotnet ef database update \
+#   --project Pico2WH.Pi5.IIoT.Infrastructure/Pico2WH.Pi5.IIoT.Infrastructure.csproj \
+#   --startup-project Pico2WH.Pi5.IIoT.Api/Pico2WH.Pi5.IIoT.Api.csproj
+
+# 若資料庫尚無 dev schema，可先執行：CREATE SCHEMA IF NOT EXISTS dev;
+# （部分 EF 版本會在遷移內含 EnsureSchema，仍以產生出的 Migration 為準。）

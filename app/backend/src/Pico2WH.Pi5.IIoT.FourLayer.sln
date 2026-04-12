@@ -1,0 +1,72 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pico2WH.Pi5.IIoT.Domain", "Pico2WH.Pi5.IIoT.Domain\Pico2WH.Pi5.IIoT.Domain.csproj", "{5650FDF7-2715-4962-B2D1-8DE67166F671}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pico2WH.Pi5.IIoT.Application", "Pico2WH.Pi5.IIoT.Application\Pico2WH.Pi5.IIoT.Application.csproj", "{8F223265-DB32-4423-8D08-983E89EE8B97}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pico2WH.Pi5.IIoT.Infrastructure", "Pico2WH.Pi5.IIoT.Infrastructure\Pico2WH.Pi5.IIoT.Infrastructure.csproj", "{5E0285A0-D25E-41B5-B8A6-0C856D91C09D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pico2WH.Pi5.IIoT.Api", "Pico2WH.Pi5.IIoT.Api\Pico2WH.Pi5.IIoT.Api.csproj", "{F7DC6277-D716-4C7A-AF0B-28D4FA3CD8C4}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{32FAA225-D950-4403-8B90-897950C634F9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pico2WH.Pi5.IIoT.Domain.Tests", "tests\Pico2WH.Pi5.IIoT.Domain.Tests\Pico2WH.Pi5.IIoT.Domain.Tests.csproj", "{562CA79D-11EF-448A-A663-0FA0B64D7309}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pico2WH.Pi5.IIoT.Application.Tests", "tests\Pico2WH.Pi5.IIoT.Application.Tests\Pico2WH.Pi5.IIoT.Application.Tests.csproj", "{762FE2B9-66FF-4A84-9EB3-1FB22A6BEA59}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pico2WH.Pi5.IIoT.Api.IntegrationTests", "tests\Pico2WH.Pi5.IIoT.Api.IntegrationTests\Pico2WH.Pi5.IIoT.Api.IntegrationTests.csproj", "{0300F92D-D81C-4A08-AE1C-47484C1DC536}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pico2WH.Pi5.IIoT.Api.ContractTests", "tests\Pico2WH.Pi5.IIoT.Api.ContractTests\Pico2WH.Pi5.IIoT.Api.ContractTests.csproj", "{E0E0E68C-CDDB-4F26-9583-AFB8848D3D2C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5650FDF7-2715-4962-B2D1-8DE67166F671}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5650FDF7-2715-4962-B2D1-8DE67166F671}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5650FDF7-2715-4962-B2D1-8DE67166F671}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5650FDF7-2715-4962-B2D1-8DE67166F671}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8F223265-DB32-4423-8D08-983E89EE8B97}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8F223265-DB32-4423-8D08-983E89EE8B97}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8F223265-DB32-4423-8D08-983E89EE8B97}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8F223265-DB32-4423-8D08-983E89EE8B97}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5E0285A0-D25E-41B5-B8A6-0C856D91C09D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5E0285A0-D25E-41B5-B8A6-0C856D91C09D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5E0285A0-D25E-41B5-B8A6-0C856D91C09D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5E0285A0-D25E-41B5-B8A6-0C856D91C09D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F7DC6277-D716-4C7A-AF0B-28D4FA3CD8C4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F7DC6277-D716-4C7A-AF0B-28D4FA3CD8C4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F7DC6277-D716-4C7A-AF0B-28D4FA3CD8C4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F7DC6277-D716-4C7A-AF0B-28D4FA3CD8C4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{562CA79D-11EF-448A-A663-0FA0B64D7309}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{562CA79D-11EF-448A-A663-0FA0B64D7309}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{562CA79D-11EF-448A-A663-0FA0B64D7309}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{562CA79D-11EF-448A-A663-0FA0B64D7309}.Release|Any CPU.Build.0 = Release|Any CPU
+		{762FE2B9-66FF-4A84-9EB3-1FB22A6BEA59}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{762FE2B9-66FF-4A84-9EB3-1FB22A6BEA59}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{762FE2B9-66FF-4A84-9EB3-1FB22A6BEA59}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{762FE2B9-66FF-4A84-9EB3-1FB22A6BEA59}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0300F92D-D81C-4A08-AE1C-47484C1DC536}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0300F92D-D81C-4A08-AE1C-47484C1DC536}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0300F92D-D81C-4A08-AE1C-47484C1DC536}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0300F92D-D81C-4A08-AE1C-47484C1DC536}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E0E0E68C-CDDB-4F26-9583-AFB8848D3D2C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E0E0E68C-CDDB-4F26-9583-AFB8848D3D2C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E0E0E68C-CDDB-4F26-9583-AFB8848D3D2C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E0E0E68C-CDDB-4F26-9583-AFB8848D3D2C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{562CA79D-11EF-448A-A663-0FA0B64D7309} = {32FAA225-D950-4403-8B90-897950C634F9}
+		{762FE2B9-66FF-4A84-9EB3-1FB22A6BEA59} = {32FAA225-D950-4403-8B90-897950C634F9}
+		{0300F92D-D81C-4A08-AE1C-47484C1DC536} = {32FAA225-D950-4403-8B90-897950C634F9}
+		{E0E0E68C-CDDB-4F26-9583-AFB8848D3D2C} = {32FAA225-D950-4403-8B90-897950C634F9}
+	EndGlobalSection
+EndGlobal

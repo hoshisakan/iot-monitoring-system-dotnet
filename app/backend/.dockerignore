@@ -1,0 +1,12 @@
+# 減少 build context，加速 docker build
+**/.git
+**/.vs
+**/.vscode
+**/bin
+**/obj
+**/logs
+**/TestResults
+**/tests
+**/*.user
+**/*.rsuser
+**/db-migration-commands.txt
