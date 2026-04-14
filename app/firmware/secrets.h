@@ -4,6 +4,11 @@
 #define WIFI_SSID "hoshiyou"
 #define WIFI_PASSWORD "Asahi302496"
 
+/*
+    * MQTT 相關設定
+    * broker IP、port、帳密等；建議使用安全連線（TLS/SSL）且 broker 需有適當的存取控制機制。
+    * 若 broker 不在本地網路，請確保裝置能正確連上 Internet 且 broker 的防火牆／安全群組允許來自裝置的連線。
+*/
 #define MQTT_BROKER_IP "172.20.10.3"
 #define MQTT_BROKER_PORT 8883
 
@@ -92,7 +97,7 @@
 #define ENABLE_TELEMETRY_EEPROM_CACHE 1
 /* sync-back 回放節流（毫秒）；獨立於 ENV_REPORT_INTERVAL_MS */
 #define SYNC_BACK_INTERVAL_MS 1000U
-#define ENABLE_I2C_BOOT_SCAN 1
+#define ENABLE_I2C_BOOT_SCAN 0
 /* 無 PAJ7620 時可測後端 device_ui_events：MQTT 連上並送出 SESSION 狀態後，發一筆至 .../ui-events */
 #define ENABLE_TEST_UI_EVENTS_MQTT_PUBLISH 0
 /* PAJ7620 手勢事件（LEFT/RIGHT/UP/DOWN/...）發佈到 .../ui-events（需 boot 掃描可探測到 0x73） */
@@ -107,6 +112,6 @@
 #define I2C_BOOT_SCAN_HOLD_MS 5000U
 
 /* USB 就緒後緩衝（毫秒）：與「相同作用」設定請只改此巨集，勿再新增重複變數。預設見 firmware_config_defaults.h */
-#define BOOT_POST_USB_DELAY_MS 30000U
+#define BOOT_POST_USB_DELAY_MS 0U
 
 #endif

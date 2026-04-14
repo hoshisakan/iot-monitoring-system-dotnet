@@ -40,6 +40,10 @@ function toInputDateTimeLocal(d: Date): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
+function nowPlusOneMinuteInput(): string {
+  return toInputDateTimeLocal(new Date(Date.now() + 60_000))
+}
+
 function localInputToIso(s: string): string {
   const d = new Date(s)
   if (Number.isNaN(d.getTime())) return new Date().toISOString()
@@ -77,7 +81,7 @@ export function TelemetryDashboardPage() {
   const [fromTime, setFromTime] = useState<string>(() =>
     toInputDateTimeLocal(new Date(Date.now() - 24 * 60 * 60 * 1000)),
   )
-  const [toTime, setToTime] = useState<string>(() => toInputDateTimeLocal(new Date()))
+  const [toTime, setToTime] = useState<string>(() => nowPlusOneMinuteInput())
   const [metrics, setMetrics] = useState<string[]>(['temperature_c', 'co2_ppm', 'pir_active'])
   const [seriesLoading, setSeriesLoading] = useState(false)
   const [seriesData, setSeriesData] = useState<TelemetrySeriesResponse | null>(null)
@@ -155,6 +159,18 @@ export function TelemetryDashboardPage() {
     }
   }, [appliedDeviceId, deviceId, fromTime, metrics, navigate, toTime])
 
+  const refreshToLatest = useCallback(() => {
+    setToTime(nowPlusOneMinuteInput())
+    if (offset === 0) {
+      void load()
+      if (appliedDeviceId.trim()) {
+        void loadSeries()
+      }
+      return
+    }
+    setOffset(0)
+  }, [appliedDeviceId, load, loadSeries, offset])
+
   useEffect(() => {
     void load()
   }, [load])
@@ -200,7 +216,7 @@ export function TelemetryDashboardPage() {
           variant="light"
           leftSection={<IconRefresh size={16} />}
           loading={loading}
-          onClick={() => void load()}
+          onClick={refreshToLatest}
         >
           重新整理
         </Button>
@@ -259,7 +275,14 @@ export function TelemetryDashboardPage() {
             w={400}
             searchable
           />
-          <Button size="xs" loading={seriesLoading} onClick={() => void loadSeries()}>
+          <Button
+            size="xs"
+            loading={seriesLoading}
+            onClick={() => {
+              setToTime(nowPlusOneMinuteInput())
+              void loadSeries()
+            }}
+          >
             重新載入圖表
           </Button>
         </Group>

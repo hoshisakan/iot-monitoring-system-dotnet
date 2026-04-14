@@ -49,6 +49,14 @@ export function DeviceLogsDashboardPage() {
     }
   }, [appliedChannel, appliedDeviceId, appliedLevel, limit, offset, navigate])
 
+  const refreshToLatest = useCallback(() => {
+    if (offset === 0) {
+      void load()
+      return
+    }
+    setOffset(0)
+  }, [load, offset])
+
   useEffect(() => {
     void load()
   }, [load])
@@ -69,7 +77,7 @@ export function DeviceLogsDashboardPage() {
           variant="light"
           leftSection={<IconRefresh size={16} />}
           loading={loading}
-          onClick={() => void load()}
+          onClick={refreshToLatest}
         >
           重新整理
         </Button>

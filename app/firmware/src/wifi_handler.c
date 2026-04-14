@@ -27,6 +27,9 @@ bool wifi_handler_init(wifi_handler_t *ctx, const char *ssid, const char *passwo
     memset(ctx, 0, sizeof(*ctx));
     ctx->ssid = ssid;
     ctx->password = password;
+    ctx->attempting = false;
+    ctx->last_connect_rc = 0;
+    ctx->last_attempt_ms = 0;
     ctx->backoff_ms = WIFI_BACKOFF_MIN_MS;
     return true;
 }
@@ -39,6 +42,7 @@ void wifi_handler_process(wifi_handler_t *ctx, uint32_t now_ms) {
     int link_status = cyw43_tcpip_link_status(&cyw43_state, CYW43_ITF_STA);
     ctx->connected = (link_status >= CYW43_LINK_UP);
     if (ctx->connected) {
+        ctx->attempting = false;
         ctx->backoff_ms = WIFI_BACKOFF_MIN_MS;
         return;
     }
@@ -47,6 +51,8 @@ void wifi_handler_process(wifi_handler_t *ctx, uint32_t now_ms) {
         return;
     }
 
+    ctx->attempting = true;
+    ctx->last_attempt_ms = now_ms;
     printf("[WiFi] Connecting SSID=%s\n", ctx->ssid);
     fflush(stdout);
     int rc = cyw43_arch_wifi_connect_timeout_ms(
@@ -59,18 +65,33 @@ void wifi_handler_process(wifi_handler_t *ctx, uint32_t now_ms) {
         printf("[WiFi] Connected\n");
         fflush(stdout);
         ctx->connected = true;
+        ctx->attempting = false;
+        ctx->last_connect_rc = 0;
         ctx->backoff_ms = WIFI_BACKOFF_MIN_MS;
         return;
     }
 
     printf("[WiFi] Connect failed rc=%d, retry in %lu ms\n", rc, (unsigned long)ctx->backoff_ms);
     fflush(stdout);
+    ctx->attempting = false;
+    ctx->last_connect_rc = rc;
     ctx->next_retry_ms = now_ms + ctx->backoff_ms;
     ctx->backoff_ms = clamp_backoff(ctx->backoff_ms * 2);
 }
 
 bool wifi_handler_is_connected(const wifi_handler_t *ctx) {
     return ctx != NULL && ctx->connected;
+}
+
+bool wifi_handler_is_attempting(const wifi_handler_t *ctx) {
+    return ctx != NULL && ctx->attempting;
+}
+
+int wifi_handler_last_connect_rc(const wifi_handler_t *ctx) {
+    if (ctx == NULL) {
+        return 0;
+    }
+    return ctx->last_connect_rc;
 }
 
 int wifi_handler_get_rssi_dbm(void) {

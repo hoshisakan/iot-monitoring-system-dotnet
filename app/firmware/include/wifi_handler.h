@@ -11,6 +11,9 @@ typedef struct {
     const char *ssid;
     const char *password;
     bool connected;
+    bool attempting;
+    int last_connect_rc;
+    uint32_t last_attempt_ms;
     uint32_t backoff_ms;
     uint32_t next_retry_ms;
 } wifi_handler_t;
@@ -40,6 +43,16 @@ void wifi_handler_process(wifi_handler_t *ctx, uint32_t now_ms);
  * @return true when station has an IP and link is active.
  */
 bool wifi_handler_is_connected(const wifi_handler_t *ctx);
+
+/**
+ * @brief True while running a connect attempt.
+ */
+bool wifi_handler_is_attempting(const wifi_handler_t *ctx);
+
+/**
+ * @brief Return last connect return code (0 means success).
+ */
+int wifi_handler_last_connect_rc(const wifi_handler_t *ctx);
 
 /**
  * @brief Return Wi-Fi RSSI in dBm for the STA interface, or a fallback when unavailable.

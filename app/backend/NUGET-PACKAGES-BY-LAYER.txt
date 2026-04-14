@@ -1,0 +1,117 @@
+================================================================================
+  app/backend — 各層 NuGet 套件名稱與版本彙整
+  產生依據：各專案 .csproj 之 <PackageReference>
+  Solution：app/backend/src/Pico2WH.Pi5.IIoT.FourLayer.sln
+================================================================================
+
+【專案參考關係（非 NuGet，供對照層級）】
+  Domain        → （無專案參考）
+  Application   → Domain
+  Infrastructure→ Application, Domain
+  Api           → Application, Infrastructure
+
+--------------------------------------------------------------------------------
+一、各層摘要（僅列出該層 .csproj 直接參考的套件）
+--------------------------------------------------------------------------------
+
+【Domain — Pico2WH.Pi5.IIoT.Domain】
+  （無 NuGet 套件；目標框架 net8.0，僅使用 SDK 內建參考）
+
+【Application — Pico2WH.Pi5.IIoT.Application】
+  Microsoft.Extensions.Logging.Abstractions     8.0.2
+  AutoMapper                                    12.0.1
+  AutoMapper.Extensions.Microsoft.DependencyInjection 12.0.1
+  FluentValidation                              11.11.0
+  FluentValidation.DependencyInjectionExtensions 11.11.0
+  MediatR                                       11.1.0
+  MediatR.Extensions.Microsoft.DependencyInjection 11.1.0
+
+【Infrastructure — Pico2WH.Pi5.IIoT.Infrastructure】
+  Microsoft.Extensions.Hosting.Abstractions           8.0.0
+  Microsoft.Extensions.Logging.Abstractions           8.0.2
+  EFCore.NamingConventions                            8.0.3
+  Docker.DotNet                                       3.125.15
+  Microsoft.EntityFrameworkCore.Design                8.0.11  （PrivateAssets 等見 .csproj）
+  Microsoft.Extensions.Configuration.EnvironmentVariables 8.0.0
+  Microsoft.Extensions.Configuration.Json             8.0.0
+  Microsoft.Extensions.Options.ConfigurationExtensions 8.0.2
+  Microsoft.IdentityModel.Tokens                      8.3.1
+  MQTTnet                                             4.3.7.1207
+  Npgsql.EntityFrameworkCore.PostgreSQL               8.0.11
+  System.IdentityModel.Tokens.Jwt                     8.3.1
+
+【Api — Pico2WH.Pi5.IIoT.Api】
+  Microsoft.EntityFrameworkCore.Design                8.0.11  （PrivateAssets 等見 .csproj）
+  Microsoft.EntityFrameworkCore                       8.0.11
+  Microsoft.AspNetCore.Authentication.JwtBearer       8.0.11
+  Microsoft.AspNetCore.OpenApi                        8.0.11
+  Serilog.AspNetCore                                  8.0.3
+  Serilog.Enrichers.Environment                       3.0.1
+  Serilog.Enrichers.Thread                            4.0.0
+  Serilog.Sinks.Console                               6.0.0
+  Serilog.Sinks.File                                  6.0.0
+  Swashbuckle.AspNetCore                              6.6.2
+
+--------------------------------------------------------------------------------
+二、一次還原（建議：自儲存庫根目錄執行）
+--------------------------------------------------------------------------------
+
+  dotnet restore app/backend/src/Pico2WH.Pi5.IIoT.FourLayer.sln
+
+--------------------------------------------------------------------------------
+三、依專案逐一加入套件（dotnet add package）
+   下列路徑皆相對於儲存庫根目錄；請在單行完整複製執行。
+--------------------------------------------------------------------------------
+
+--- Application：app/backend/src/Pico2WH.Pi5.IIoT.Application/Pico2WH.Pi5.IIoT.Application.csproj ---
+
+dotnet add app/backend/src/Pico2WH.Pi5.IIoT.Application/Pico2WH.Pi5.IIoT.Application.csproj package Microsoft.Extensions.Logging.Abstractions --version 8.0.2
+dotnet add app/backend/src/Pico2WH.Pi5.IIoT.Application/Pico2WH.Pi5.IIoT.Application.csproj package AutoMapper --version 12.0.1
+dotnet add app/backend/src/Pico2WH.Pi5.IIoT.Application/Pico2WH.Pi5.IIoT.Application.csproj package AutoMapper.Extensions.Microsoft.DependencyInjection --version 12.0.1
+dotnet add app/backend/src/Pico2WH.Pi5.IIoT.Application/Pico2WH.Pi5.IIoT.Application.csproj package FluentValidation --version 11.11.0
+dotnet add app/backend/src/Pico2WH.Pi5.IIoT.Application/Pico2WH.Pi5.IIoT.Application.csproj package FluentValidation.DependencyInjectionExtensions --version 11.11.0
+dotnet add app/backend/src/Pico2WH.Pi5.IIoT.Application/Pico2WH.Pi5.IIoT.Application.csproj package MediatR --version 11.1.0
+dotnet add app/backend/src/Pico2WH.Pi5.IIoT.Application/Pico2WH.Pi5.IIoT.Application.csproj package MediatR.Extensions.Microsoft.DependencyInjection --version 11.1.0
+
+--- Infrastructure：app/backend/src/Pico2WH.Pi5.IIoT.Infrastructure/Pico2WH.Pi5.IIoT.Infrastructure.csproj ---
+
+dotnet add app/backend/src/Pico2WH.Pi5.IIoT.Infrastructure/Pico2WH.Pi5.IIoT.Infrastructure.csproj package Microsoft.Extensions.Hosting.Abstractions --version 8.0.0
+dotnet add app/backend/src/Pico2WH.Pi5.IIoT.Infrastructure/Pico2WH.Pi5.IIoT.Infrastructure.csproj package Microsoft.Extensions.Logging.Abstractions --version 8.0.2
+dotnet add app/backend/src/Pico2WH.Pi5.IIoT.Infrastructure/Pico2WH.Pi5.IIoT.Infrastructure.csproj package EFCore.NamingConventions --version 8.0.3
+dotnet add app/backend/src/Pico2WH.Pi5.IIoT.Infrastructure/Pico2WH.Pi5.IIoT.Infrastructure.csproj package Docker.DotNet --version 3.125.15
+dotnet add app/backend/src/Pico2WH.Pi5.IIoT.Infrastructure/Pico2WH.Pi5.IIoT.Infrastructure.csproj package Microsoft.EntityFrameworkCore.Design --version 8.0.11
+dotnet add app/backend/src/Pico2WH.Pi5.IIoT.Infrastructure/Pico2WH.Pi5.IIoT.Infrastructure.csproj package Microsoft.Extensions.Configuration.EnvironmentVariables --version 8.0.0
+dotnet add app/backend/src/Pico2WH.Pi5.IIoT.Infrastructure/Pico2WH.Pi5.IIoT.Infrastructure.csproj package Microsoft.Extensions.Configuration.Json --version 8.0.0
+dotnet add app/backend/src/Pico2WH.Pi5.IIoT.Infrastructure/Pico2WH.Pi5.IIoT.Infrastructure.csproj package Microsoft.Extensions.Options.ConfigurationExtensions --version 8.0.2
+dotnet add app/backend/src/Pico2WH.Pi5.IIoT.Infrastructure/Pico2WH.Pi5.IIoT.Infrastructure.csproj package Microsoft.IdentityModel.Tokens --version 8.3.1
+dotnet add app/backend/src/Pico2WH.Pi5.IIoT.Infrastructure/Pico2WH.Pi5.IIoT.Infrastructure.csproj package MQTTnet --version 4.3.7.1207
+dotnet add app/backend/src/Pico2WH.Pi5.IIoT.Infrastructure/Pico2WH.Pi5.IIoT.Infrastructure.csproj package Npgsql.EntityFrameworkCore.PostgreSQL --version 8.0.11
+dotnet add app/backend/src/Pico2WH.Pi5.IIoT.Infrastructure/Pico2WH.Pi5.IIoT.Infrastructure.csproj package System.IdentityModel.Tokens.Jwt --version 8.3.1
+
+（說明：Microsoft.EntityFrameworkCore.Design 在本專案中為開發時資產，若需與現有 .csproj 完全一致之 PrivateAssets／IncludeAssets，請以專案檔為準再手動調整。）
+
+--- Api：app/backend/src/Pico2WH.Pi5.IIoT.Api/Pico2WH.Pi5.IIoT.Api.csproj ---
+
+dotnet add app/backend/src/Pico2WH.Pi5.IIoT.Api/Pico2WH.Pi5.IIoT.Api.csproj package Microsoft.EntityFrameworkCore.Design --version 8.0.11
+dotnet add app/backend/src/Pico2WH.Pi5.IIoT.Api/Pico2WH.Pi5.IIoT.Api.csproj package Microsoft.EntityFrameworkCore --version 8.0.11
+dotnet add app/backend/src/Pico2WH.Pi5.IIoT.Api/Pico2WH.Pi5.IIoT.Api.csproj package Microsoft.AspNetCore.Authentication.JwtBearer --version 8.0.11
+dotnet add app/backend/src/Pico2WH.Pi5.IIoT.Api/Pico2WH.Pi5.IIoT.Api.csproj package Microsoft.AspNetCore.OpenApi --version 8.0.11
+dotnet add app/backend/src/Pico2WH.Pi5.IIoT.Api/Pico2WH.Pi5.IIoT.Api.csproj package Serilog.AspNetCore --version 8.0.3
+dotnet add app/backend/src/Pico2WH.Pi5.IIoT.Api/Pico2WH.Pi5.IIoT.Api.csproj package Serilog.Enrichers.Environment --version 3.0.1
+dotnet add app/backend/src/Pico2WH.Pi5.IIoT.Api/Pico2WH.Pi5.IIoT.Api.csproj package Serilog.Enrichers.Thread --version 4.0.0
+dotnet add app/backend/src/Pico2WH.Pi5.IIoT.Api/Pico2WH.Pi5.IIoT.Api.csproj package Serilog.Sinks.Console --version 6.0.0
+dotnet add app/backend/src/Pico2WH.Pi5.IIoT.Api/Pico2WH.Pi5.IIoT.Api.csproj package Serilog.Sinks.File --version 6.0.0
+dotnet add app/backend/src/Pico2WH.Pi5.IIoT.Api/Pico2WH.Pi5.IIoT.Api.csproj package Swashbuckle.AspNetCore --version 6.6.2
+
+--------------------------------------------------------------------------------
+四、選用：EF Core CLI 全域工具（非專案 NuGet，遷移／更新資料庫時使用）
+   版本宜與 Microsoft.EntityFrameworkCore.* 8.0.11 對齊。
+--------------------------------------------------------------------------------
+
+  dotnet tool install --global dotnet-ef --version 8.0.11
+
+  （若已安裝其他版本，可改用 dotnet tool update --global dotnet-ef --version 8.0.11）
+
+================================================================================
+結束
+================================================================================

@@ -96,6 +96,7 @@ static void schedule_retry(mqtt_manager_t *ctx, uint32_t now_ms) {
 static void on_mqtt_pub(void *arg, err_t result) {
     mqtt_manager_t *ctx = (mqtt_manager_t *)arg;
     ctx->publish_inflight = false;
+    ctx->last_publish_result = (int)result;
     if (result != ERR_OK) {
         printf("[MQTT] publish failed: %d (will disconnect and retry)\n", result);
         ctx->pending_disconnect = true;
@@ -106,8 +107,10 @@ static void on_mqtt_connection(mqtt_client_t *client, void *arg, mqtt_connection
     (void)client;
     mqtt_manager_t *ctx = (mqtt_manager_t *)arg;
     ctx->connecting = false;
+    ctx->last_connect_status = (int)status;
     if (status == MQTT_CONNECT_ACCEPTED) {
         ctx->backoff_ms = MQTT_BACKOFF_MIN_MS;
+        ctx->last_connect_invoke_rc = (int)ERR_OK;
         printf("[MQTT] connected (%s)\n", ctx->tls_enabled ? "TLS" : "PLAINTEXT");
         if (ctx->topic_control != NULL && ctx->topic_control[0] != '\0') {
             mqtt_set_inpub_callback(ctx->client, on_mqtt_incoming_publish, on_mqtt_incoming_data, ctx);
@@ -156,6 +159,9 @@ bool mqtt_manager_init(mqtt_manager_t *ctx, const mqtt_manager_config_t *cfg) {
     ctx->topic = cfg->topic;
     ctx->topic_control = cfg->topic_control;
     ctx->tls_enabled = (cfg->broker_port != 1883);
+    ctx->last_connect_status = 0;
+    ctx->last_connect_invoke_rc = 0;
+    ctx->last_publish_result = 0;
 
     if (!ipaddr_aton(cfg->broker_ip, &ctx->broker_addr)) {
         g_last_init_error = MQTT_INIT_ERR_INVALID_BROKER_IP;
@@ -342,8 +348,11 @@ void mqtt_manager_process(mqtt_manager_t *ctx, uint32_t now_ms) {
     cyw43_arch_lwip_end();
     if (rc != ERR_OK) {
         ctx->connecting = false;
+        ctx->last_connect_invoke_rc = (int)rc;
         printf("[MQTT] connect invoke failed: %d\n", rc);
         schedule_retry(ctx, now_ms);
+    } else {
+        ctx->last_connect_invoke_rc = (int)ERR_OK;
     }
 }
 
@@ -390,6 +399,7 @@ bool mqtt_manager_publish_topic(mqtt_manager_t *ctx, const char *topic, const ch
     cyw43_arch_lwip_end();
     if (rc != ERR_OK) {
         ctx->publish_inflight = false;
+        ctx->last_publish_result = (int)rc;
         return false;
     }
     return true;

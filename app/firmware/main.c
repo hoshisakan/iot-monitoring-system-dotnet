@@ -221,12 +221,32 @@ __attribute__((weak)) int mbedtls_hardware_poll(void *data, unsigned char *outpu
     return 0;
 }
 
+#if ENABLE_LCD1602
+static void lcd_show_fatal_message(const char *reason) {
+    if (!g_lcd_ok) {
+        return;
+    }
+    char line1[17] = "FATAL ERROR";
+    char line2[17] = {0};
+    if (reason != NULL && reason[0] != '\0') {
+        (void)snprintf(line2, sizeof(line2), "%.16s", reason);
+    } else {
+        (void)snprintf(line2, sizeof(line2), "see usb log");
+    }
+    lcd1602_put_line(&g_lcd, 0, line1);
+    lcd1602_put_line(&g_lcd, 1, line2);
+}
+#endif
+
 static void enter_safe_mode(const char *reason) {
     printf("[SAFE] %s\r\n", reason);
     fflush(stdout);
     while (true) {
         printf("[FATAL ERROR] %s\r\n", reason);
         fflush(stdout);
+#if ENABLE_LCD1602
+        lcd_show_fatal_message(reason);
+#endif
         cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
         sleep_ms(150);
         cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
@@ -262,8 +282,32 @@ static void update_status_outputs(uint32_t now_ms, bool wifi_connected, bool mqt
 }
 
 #if ENABLE_LCD1602
+static int mqtt_diag_code_one(const mqtt_manager_t *ctx) {
+    if (ctx == NULL) {
+        return 0;
+    }
+    if (ctx->last_connect_invoke_rc != 0) {
+        return ctx->last_connect_invoke_rc;
+    }
+    if (ctx->last_connect_status != 0 && ctx->last_connect_status != MQTT_CONNECT_ACCEPTED) {
+        return ctx->last_connect_status;
+    }
+    if (ctx->last_publish_result != 0) {
+        return ctx->last_publish_result;
+    }
+    return 0;
+}
+
+static int mqtt_diag_code_any(const mqtt_manager_t *a, const mqtt_manager_t *b) {
+    int ea = mqtt_diag_code_one(a);
+    if (ea != 0) {
+        return ea;
+    }
+    return mqtt_diag_code_one(b);
+}
+
 static void lcd_refresh_mvp(uint32_t now_ms, bool wifi_connected, bool mqtt_connected, int rssi_dbm,
-                            bool urgent) {
+                            bool urgent, bool wifi_trying, bool mqtt_trying, int wifi_err_code, int mqtt_err_code) {
     if (!g_lcd_ok) {
         return;
     }
@@ -280,7 +324,9 @@ static void lcd_refresh_mvp(uint32_t now_ms, bool wifi_connected, bool mqtt_conn
         (void)snprintf(line1, sizeof(line1), "    ALARM!      ");
         (void)snprintf(line2, sizeof(line2), " ACCEL URGENT  ");
     } else {
-        (void)snprintf(line1, sizeof(line1), "WF:%d MQ:%d", wifi_connected ? 1 : 0, mqtt_connected ? 1 : 0);
+        const char *wf_state = wifi_connected ? "OK" : (wifi_trying ? "TRY" : (wifi_err_code != 0 ? "ERR" : "---"));
+        const char *mq_state = mqtt_connected ? "OK" : (mqtt_trying ? "TRY" : (mqtt_err_code != 0 ? "ERR" : "---"));
+        (void)snprintf(line1, sizeof(line1), "WF:%-3s MQ:%-3s", wf_state, mq_state);
         char qpart[8];
 #if ENABLE_TELEMETRY_EEPROM_CACHE
         if (g_eeprom_queue_ok) {
@@ -291,10 +337,12 @@ static void lcd_refresh_mvp(uint32_t now_ms, bool wifi_connected, bool mqtt_conn
 #else
         (void)snprintf(qpart, sizeof(qpart), "--");
 #endif
-        if (wifi_connected) {
+        if (wifi_connected && mqtt_connected && !wifi_trying && !mqtt_trying && wifi_err_code == 0 && mqtt_err_code == 0) {
             (void)snprintf(line2, sizeof(line2), "RS:%d Q:%s", rssi_dbm, qpart);
+        } else if (wifi_connected) {
+            (void)snprintf(line2, sizeof(line2), "Ew:%d Em:%d", wifi_err_code, mqtt_err_code);
         } else {
-            (void)snprintf(line2, sizeof(line2), "RS:---- Q:%s", qpart);
+            (void)snprintf(line2, sizeof(line2), "WF TRY:%d E:%d", wifi_trying ? 1 : 0, wifi_err_code);
         }
     }
 
@@ -1535,7 +1583,12 @@ int main(void) {
         {
             int rssi_dbm = wifi_connected ? wifi_handler_get_rssi_dbm() : 0;
             bool urgent = accel_is_urgent(&imu_sample, g_device_cfg.accel_urgent_threshold_g);
-            lcd_refresh_mvp(now, wifi_connected, mqtt_connected, rssi_dbm, urgent);
+            bool wifi_trying = wifi_handler_is_attempting(&g_wifi);
+            bool mqtt_trying = g_mqtt_telemetry.connecting || g_mqtt_status.connecting;
+            int wifi_err_code = wifi_handler_last_connect_rc(&g_wifi);
+            int mqtt_err_code = mqtt_diag_code_any(&g_mqtt_telemetry, &g_mqtt_status);
+            lcd_refresh_mvp(now, wifi_connected, mqtt_connected, rssi_dbm, urgent, wifi_trying, mqtt_trying,
+                            wifi_err_code, mqtt_err_code);
         }
 #endif
         if (g_oled_ok && g_has_last_sample && (int32_t)(now - g_next_oled_rotate_ms) >= 0) {

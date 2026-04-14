@@ -33,6 +33,9 @@ typedef struct {
     /** Set from lwIP publish callback; main loop disconnects and reconnects (broker down / half-open TCP). */
     bool pending_disconnect;
     bool tls_enabled;
+    int last_connect_status;
+    int last_connect_invoke_rc;
+    int last_publish_result;
     uint32_t backoff_ms;
     uint32_t next_retry_ms;
     uint32_t connect_started_ms;
