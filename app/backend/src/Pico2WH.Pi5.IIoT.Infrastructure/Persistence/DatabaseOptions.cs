@@ -10,4 +10,13 @@ public sealed class DatabaseOptions
 
     /// <summary>啟動時是否自動執行 <c>Database.Migrate()</c>（套用待處理遷移）。若改由 CI 專責遷移可設為 <c>false</c>。</summary>
     public bool AutoMigrate { get; set; } = true;
+
+    /// <summary>是否使用 Dapper 實作遙測時序查詢（可切回 EF 以快速回退）。</summary>
+    public bool UseDapperForTelemetrySeries { get; set; } = true;
+
+    /// <summary>是否使用 Dapper 實作結構化日誌查詢（可切回 EF 以快速回退）。</summary>
+    public bool UseDapperForLogsQuery { get; set; } = true;
+
+    /// <summary>是否使用 Dapper 實作 UI 事件查詢（可切回 EF 以快速回退）。</summary>
+    public bool UseDapperForUiEventsQuery { get; set; } = true;
 }

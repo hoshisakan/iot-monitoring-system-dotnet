@@ -502,3 +502,5 @@ FodyWeavers.xsd
 /app/backend/db/seed_users_manual.sql
 /app/firmware/build
 .vscode
+.nuget-http-cache
+/scripts/perf

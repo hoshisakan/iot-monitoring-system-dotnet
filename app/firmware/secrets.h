@@ -38,7 +38,7 @@
 #define RTC_TRUSTED_MIN_YEAR 26
 
 /* 遙測上報間隔（毫秒；主迴圈非阻塞排程） */
-#define ENV_REPORT_INTERVAL_MS 10000U
+#define ENV_REPORT_INTERVAL_MS 1000U
 
 /* IMU 取樣間隔（毫秒；主迴圈非阻塞） */
 #define IMU_SAMPLING_INTERVAL_MS 100U
