@@ -370,6 +370,7 @@ export function TelemetryDashboardPage() {
                 <Table.Th>BME 溫度</Table.Th>
                 <Table.Th>BME 濕度</Table.Th>
                 <Table.Th>氣壓</Table.Th>
+                <Table.Th>照度</Table.Th>
                 <Table.Th>SCD41 CO2</Table.Th>
                 <Table.Th>SCD41 溫度</Table.Th>
                 <Table.Th>SCD41 濕度</Table.Th>
@@ -398,6 +399,7 @@ export function TelemetryDashboardPage() {
                   <Table.Td>{fmt(r.temperature_c)}</Table.Td>
                   <Table.Td>{fmt(r.humidity_pct)}</Table.Td>
                   <Table.Td>{fmt(r.pressure_hpa)}</Table.Td>
+                  <Table.Td>{fmt(r.lux)}</Table.Td>
                   <Table.Td>{fmt(r.co2_ppm, 0)}</Table.Td>
                   <Table.Td>{fmt(r.temperature_c_scd41)}</Table.Td>
                   <Table.Td>{fmt(r.humidity_pct_scd41)}</Table.Td>
