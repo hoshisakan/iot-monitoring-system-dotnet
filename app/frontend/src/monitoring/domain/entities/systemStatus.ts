@@ -9,4 +9,6 @@ export interface SystemStatusItem {
 
 export interface SystemStatusResponse {
   items: SystemStatusItem[]
+  warning_code?: string | null
+  warning_message?: string | null
 }

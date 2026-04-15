@@ -53,11 +53,11 @@ public sealed class LogDapperQueryRepository : ILogQueryRepository
                 message AS Message,
                 payload_json AS PayloadJson,
                 source_ip AS SourceIp,
-                device_time AS DeviceTimeUtc,
-                created_at AS CreatedAtUtc
+                device_time_utc AS DeviceTimeUtc,
+                created_at_utc AS CreatedAtUtc
             FROM "{_schema}"."app_logs"
             {whereSql}
-            ORDER BY created_at DESC
+            ORDER BY created_at_utc DESC
             OFFSET @Offset
             LIMIT @Limit
             """;
@@ -88,12 +88,12 @@ public sealed class LogDapperQueryRepository : ILogQueryRepository
     {
         if (filter.FromUtc.HasValue)
         {
-            whereSql.Append(" AND created_at >= @FromUtc");
+            whereSql.Append(" AND created_at_utc >= @FromUtc");
             p.Add("FromUtc", filter.FromUtc.Value);
         }
         if (filter.ToUtc.HasValue)
         {
-            whereSql.Append(" AND created_at <= @ToUtc");
+            whereSql.Append(" AND created_at_utc <= @ToUtc");
             p.Add("ToUtc", filter.ToUtc.Value);
         }
         if (!string.IsNullOrWhiteSpace(filter.DeviceId))

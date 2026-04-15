@@ -22,6 +22,14 @@ export class HttpSystemStatusRepository implements ISystemStatusRepository {
     }
     const o = data as Record<string, unknown>
     const items = Array.isArray(o.items) ? (o.items as SystemStatusResponse['items']) : []
-    return { items }
+    const warning_code =
+      typeof o.warning_code === 'string' || o.warning_code === null
+        ? (o.warning_code as string | null)
+        : null
+    const warning_message =
+      typeof o.warning_message === 'string' || o.warning_message === null
+        ? (o.warning_message as string | null)
+        : null
+    return { items, warning_code, warning_message }
   }
 }

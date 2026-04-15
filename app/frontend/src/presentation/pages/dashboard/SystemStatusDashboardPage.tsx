@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Badge, Button, Group, Loader, Paper, ScrollArea, Table, Text, Title } from '@mantine/core'
+import { Alert, Badge, Button, Group, Loader, Paper, ScrollArea, Table, Text, Title } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
-import { IconRefresh } from '@tabler/icons-react'
+import { IconAlertTriangle, IconRefresh } from '@tabler/icons-react'
 import { clearTokens } from '@/infrastructure/authStorage'
 import type { SystemStatusItem } from '@/monitoring/domain/entities/systemStatus'
 import { UnauthorizedError } from '@/monitoring/infrastructure/errors/UnauthorizedError'
@@ -19,6 +19,8 @@ function statusColor(status: string): string {
 export function SystemStatusDashboardPage() {
   const navigate = useNavigate()
   const [items, setItems] = useState<SystemStatusItem[]>([])
+  const [warningMessage, setWarningMessage] = useState<string | null>(null)
+  const [warningCode, setWarningCode] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async () => {
@@ -26,6 +28,8 @@ export function SystemStatusDashboardPage() {
     try {
       const data = await monitoringApi.getSystemStatus()
       setItems(data.items ?? [])
+      setWarningCode(data.warning_code ?? null)
+      setWarningMessage(data.warning_message ?? null)
     } catch (e) {
       if (e instanceof UnauthorizedError) {
         clearTokens()
@@ -39,10 +43,14 @@ export function SystemStatusDashboardPage() {
           color: 'yellow',
         })
         setItems([])
+        setWarningCode(null)
+        setWarningMessage(null)
         return
       }
       const msg = e instanceof Error ? e.message : String(e)
       notifications.show({ title: '載入系統狀態失敗', message: msg, color: 'red' })
+      setWarningCode(null)
+      setWarningMessage(null)
     } finally {
       setLoading(false)
     }
@@ -73,6 +81,17 @@ export function SystemStatusDashboardPage() {
       </Group>
 
       <ScrollArea>
+        {!loading && warningMessage && (
+          <Alert
+            color="yellow"
+            variant="light"
+            title={warningCode ? `資料來源警示：${warningCode}` : '資料來源警示'}
+            icon={<IconAlertTriangle size={16} />}
+            mb="md"
+          >
+            {warningMessage}
+          </Alert>
+        )}
         {loading && items.length === 0 ? (
           <Group justify="center" p="xl">
             <Loader color="teal" />
@@ -115,7 +134,7 @@ export function SystemStatusDashboardPage() {
         )}
         {!loading && items.length === 0 && (
           <Text c="dimmed" ta="center" p="xl">
-            無資料或非管理員無法存取
+            {warningMessage ? '目前可連到 API，但系統狀態來源不可用。' : '無資料或非管理員無法存取'}
           </Text>
         )}
       </ScrollArea>

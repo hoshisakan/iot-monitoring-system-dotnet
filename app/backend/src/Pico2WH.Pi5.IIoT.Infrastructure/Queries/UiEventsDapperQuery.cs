@@ -48,12 +48,12 @@ public sealed class UiEventsDapperQuery : IUiEventsQuery
         }
         if (fromUtc.HasValue)
         {
-            whereSql.Append(" AND device_time >= @FromUtc");
+            whereSql.Append(" AND device_time_utc >= @FromUtc");
             p.Add("FromUtc", fromUtc.Value);
         }
         if (toUtc.HasValue)
         {
-            whereSql.Append(" AND device_time <= @ToUtc");
+            whereSql.Append(" AND device_time_utc <= @ToUtc");
             p.Add("ToUtc", toUtc.Value);
         }
 
@@ -70,14 +70,14 @@ public sealed class UiEventsDapperQuery : IUiEventsQuery
             SELECT
                 event_id AS EventId,
                 device_id AS DeviceId,
-                device_time AS DeviceTimeUtc,
+                device_time_utc AS DeviceTimeUtc,
                 event_type AS EventType,
                 event_value AS EventValue,
                 channel AS Channel,
                 site_id AS SiteId
             FROM "{_schema}"."device_ui_events"
             {whereSql}
-            ORDER BY device_time DESC
+            ORDER BY device_time_utc DESC
             OFFSET @Offset
             LIMIT @Limit
             """;

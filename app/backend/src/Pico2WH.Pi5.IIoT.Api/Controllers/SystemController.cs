@@ -23,20 +23,23 @@ public sealed class SystemController : ControllerBase
         [FromQuery(Name = "include_stopped")] bool includeStopped = true,
         CancellationToken cancellationToken = default)
     {
-        var list = await _mediator.Send(new SystemStatusQuery(includeStopped), cancellationToken)
+        var result = await _mediator.Send(new SystemStatusQuery(includeStopped), cancellationToken)
             .ConfigureAwait(false);
 
-        var items = list.Select(c => new SystemStatusItem(
+        var items = result.Items.Select(c => new SystemStatusItem(
             c.Name,
             c.ContainerId,
             c.Status,
             c.Ip,
             c.HealthStatus ?? "unknown")).ToList();
 
-        return Ok(new SystemStatusResponse(items));
+        return Ok(new SystemStatusResponse(items, result.WarningCode, result.WarningMessage));
     }
 
-    public sealed record SystemStatusResponse(IReadOnlyList<SystemStatusItem> Items);
+    public sealed record SystemStatusResponse(
+        IReadOnlyList<SystemStatusItem> Items,
+        string? WarningCode,
+        string? WarningMessage);
 
     public sealed record SystemStatusItem(
         string ContainerName,
