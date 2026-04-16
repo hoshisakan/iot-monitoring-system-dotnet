@@ -58,6 +58,7 @@ public static class DependencyInjection
         services.AddSingleton<IPasswordHasher, PasswordHasherService>();
 
         services.AddScoped<IMqttPublisher, MqttPublisher>();
+        services.AddScoped<ITelemetryIngestRepository, TelemetryIngestRepository>();
         services.AddScoped<IUiEventIngestRepository, UiEventIngestRepository>();
         services.AddScoped<IStatusLogIngestRepository, StatusLogIngestRepository>();
         services.AddHostedService<MqttIngestHostedService>();

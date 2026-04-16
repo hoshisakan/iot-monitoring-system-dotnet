@@ -1,0 +1,25 @@
+namespace Pico2WH.Pi5.IIoT.Application.Common.Models;
+
+public sealed record TelemetryIngestItem(
+    string DeviceId,
+    string SiteId,
+    DateTime DeviceTimeUtc,
+    DateTime ServerTimeUtc,
+    bool IsSyncBack,
+    double? TemperatureC,
+    double? HumidityPct,
+    double? Lux,
+    double? Co2Ppm,
+    double? TemperatureCScd41,
+    double? HumidityPctScd41,
+    bool? PirActive,
+    double? PressureHpa,
+    double? GasResistanceOhm,
+    double? AccelX,
+    double? AccelY,
+    double? AccelZ,
+    double? GyroX,
+    double? GyroY,
+    double? GyroZ,
+    int? RssiDbm,
+    string? RawPayloadJson);
