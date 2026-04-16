@@ -1,23 +1,23 @@
 using System.Text.Json;
-using Microsoft.Extensions.Logging;
 using Pico2WH.Pi5.IIoT.Application.Common.Interfaces;
-using Pico2WH.Pi5.IIoT.Infrastructure.Persistence.Context;
-using Pico2WH.Pi5.IIoT.Infrastructure.Persistence.Models;
+using Pico2WH.Pi5.IIoT.Application.Common.Models;
 
-namespace Pico2WH.Pi5.IIoT.Infrastructure.Mqtt;
+namespace Pico2WH.Pi5.IIoT.Application.Ingest;
 
 public sealed class UiEventMqttIngestService : IUiEventMqttIngestService
 {
-    private readonly ApplicationDbContext _db;
-    private readonly ILogger<UiEventMqttIngestService> _logger;
+    private readonly IUiEventIngestRepository _repo;
 
-    public UiEventMqttIngestService(ApplicationDbContext db, ILogger<UiEventMqttIngestService> logger)
+    public UiEventMqttIngestService(IUiEventIngestRepository repo)
     {
-        _db = db;
-        _logger = logger;
+        _repo = repo;
     }
 
-    public async Task IngestUiEventJsonAsync(string siteId, string deviceId, string jsonPayload, CancellationToken cancellationToken = default)
+    public async Task IngestUiEventJsonAsync(
+        string siteId,
+        string deviceId,
+        string jsonPayload,
+        CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(siteId) || string.IsNullOrWhiteSpace(deviceId))
             return;
@@ -31,24 +31,17 @@ public sealed class UiEventMqttIngestService : IUiEventMqttIngestService
         else
             deviceTime = deviceTime.ToUniversalTime();
 
-        var eventType = Truncate(GetString(root, "event_type") ?? "unknown", 16);
-        var eventValue = Truncate(GetString(root, "event_value") ?? "", 64);
-        var channel = Truncate(GetString(root, "channel") ?? "ui", 32);
+        var item = new UiEventIngestItem(
+            DeviceId: deviceId.Trim(),
+            SiteId: siteId.Trim(),
+            DeviceTimeUtc: deviceTime,
+            EventType: Truncate(GetString(root, "event_type") ?? "unknown", 16),
+            EventValue: Truncate(GetString(root, "event_value") ?? "", 64),
+            Channel: Truncate(GetString(root, "channel") ?? "ui", 32),
+            PayloadJson: jsonPayload,
+            IngestedAtUtc: DateTime.UtcNow);
 
-        var row = new DeviceUiEventRecord
-        {
-            DeviceId = deviceId.Trim(),
-            DeviceTimeUtc = deviceTime,
-            EventType = eventType,
-            EventValue = eventValue,
-            Channel = channel,
-            SiteId = siteId.Trim(),
-            PayloadJson = jsonPayload,
-            IngestedAtUtc = DateTime.UtcNow
-        };
-
-        await _db.DeviceUiEvents.AddAsync(row, cancellationToken).ConfigureAwait(false);
-        await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        await _repo.AddAsync(item, cancellationToken).ConfigureAwait(false);
     }
 
     private static string Truncate(string s, int max) =>

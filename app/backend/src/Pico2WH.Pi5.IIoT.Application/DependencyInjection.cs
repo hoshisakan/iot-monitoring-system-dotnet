@@ -15,6 +15,8 @@ public static class DependencyInjection
         var assembly = typeof(DependencyInjection).Assembly;
 
         services.AddScoped<ITelemetryMqttIngestService, TelemetryMqttIngestService>();
+        services.AddScoped<IUiEventMqttIngestService, UiEventMqttIngestService>();
+        services.AddScoped<IStatusLogMqttIngestService, StatusLogMqttIngestService>();
 
         services.AddAutoMapper(assembly);
         services.AddMediatR(typeof(DependencyInjection));

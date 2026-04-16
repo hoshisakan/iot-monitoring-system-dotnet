@@ -1,26 +1,23 @@
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Pico2WH.Pi5.IIoT.Application.Common.Interfaces;
-using Pico2WH.Pi5.IIoT.Infrastructure.Persistence.Context;
-using Pico2WH.Pi5.IIoT.Infrastructure.Persistence.Models;
+using Pico2WH.Pi5.IIoT.Application.Common.Models;
 
-namespace Pico2WH.Pi5.IIoT.Infrastructure.Mqtt;
+namespace Pico2WH.Pi5.IIoT.Application.Ingest;
 
-/// <summary>
-/// 對齊韌體 <c>build_log_payload</c>／<c>publish_control_ack</c>：
-/// <c>device_id</c>、<c>module</c>、<c>log_level</c>、<c>error_code</c>、<c>message</c>、<c>device_time</c>。
-/// </summary>
 public sealed class StatusLogMqttIngestService : IStatusLogMqttIngestService
 {
     private const int MaxMessageLength = 8000;
     private const string ChannelStatus = "status";
 
-    private readonly ApplicationDbContext _db;
+    private readonly IStatusLogIngestRepository _repo;
     private readonly ILogger<StatusLogMqttIngestService> _logger;
 
-    public StatusLogMqttIngestService(ApplicationDbContext db, ILogger<StatusLogMqttIngestService> logger)
+    public StatusLogMqttIngestService(
+        IStatusLogIngestRepository repo,
+        ILogger<StatusLogMqttIngestService> logger)
     {
-        _db = db;
+        _repo = repo;
         _logger = logger;
     }
 
@@ -52,20 +49,16 @@ public sealed class StatusLogMqttIngestService : IStatusLogMqttIngestService
         var messageBody = GetString(root, "message") ?? "";
         var displayMessage = BuildDisplayMessage(module, messageBody);
 
-        var row = new AppLogRecord
-        {
-            DeviceId = resolvedDeviceId,
-            Channel = ChannelStatus,
-            Level = level,
-            Message = Truncate(displayMessage, MaxMessageLength),
-            PayloadJson = jsonPayload,
-            SourceIp = null,
-            DeviceTimeUtc = deviceTime,
-            CreatedAtUtc = DateTime.UtcNow
-        };
+        var item = new StatusLogIngestItem(
+            DeviceId: resolvedDeviceId,
+            Channel: ChannelStatus,
+            Level: level,
+            Message: Truncate(displayMessage, MaxMessageLength),
+            PayloadJson: jsonPayload,
+            DeviceTimeUtc: deviceTime,
+            CreatedAtUtc: DateTime.UtcNow);
 
-        await _db.AppLogs.AddAsync(row, cancellationToken).ConfigureAwait(false);
-        await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        await _repo.AddAsync(item, cancellationToken).ConfigureAwait(false);
 
         _logger.LogDebug(
             "mod=status_log_ingest site_id={SiteId} device_id={DeviceId} level={Level} module={Module}",

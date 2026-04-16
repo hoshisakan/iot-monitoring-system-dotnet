@@ -58,8 +58,8 @@ public static class DependencyInjection
         services.AddSingleton<IPasswordHasher, PasswordHasherService>();
 
         services.AddScoped<IMqttPublisher, MqttPublisher>();
-        services.AddScoped<IUiEventMqttIngestService, UiEventMqttIngestService>();
-        services.AddScoped<IStatusLogMqttIngestService, StatusLogMqttIngestService>();
+        services.AddScoped<IUiEventIngestRepository, UiEventIngestRepository>();
+        services.AddScoped<IStatusLogIngestRepository, StatusLogIngestRepository>();
         services.AddHostedService<MqttIngestHostedService>();
         services.AddScoped<IDockerSystemClient, DockerSystemClient>();
 
