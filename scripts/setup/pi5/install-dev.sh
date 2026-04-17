@@ -2,9 +2,14 @@
 set -euo pipefail
 
 echo "[1/6] apt 基礎更新"
+if [ -f /etc/apt/sources.list.d/microsoft-prod.list ]; then
+  echo "偵測到舊的 Microsoft APT 來源，移除以避免 trixie 簽章驗證錯誤"
+  sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list
+  sudo rm -f /usr/share/keyrings/microsoft-prod.gpg
+fi
 sudo apt update
 sudo apt install -y \
-  ca-certificates curl gnupg lsb-release software-properties-common \
+  ca-certificates curl gnupg lsb-release \
   git unzip zip xz-utils make pkg-config
 
 echo "[2/6] 安裝前端（Node.js 20）"
@@ -16,15 +21,22 @@ node -v
 npm -v
 
 echo "[3/6] 安裝後端（.NET 8 SDK + dotnet-ef）"
-if ! command -v dotnet >/dev/null 2>&1; then
-  curl -fsSL https://packages.microsoft.com/config/debian/12/packages-microsoft-prod.deb -o /tmp/packages-microsoft-prod.deb
-  sudo dpkg -i /tmp/packages-microsoft-prod.deb
-  sudo apt update
+DOTNET_ROOT="${DOTNET_ROOT:-$HOME/.dotnet}"
+if ! command -v dotnet >/dev/null 2>&1 || ! dotnet --list-sdks 2>/dev/null | grep -q '^8\.'; then
+  curl -fsSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh
+  chmod +x /tmp/dotnet-install.sh
+  /tmp/dotnet-install.sh --channel 8.0 --install-dir "$DOTNET_ROOT"
 fi
-sudo apt install -y dotnet-sdk-8.0
+export DOTNET_ROOT="$DOTNET_ROOT"
+export PATH="$DOTNET_ROOT:$DOTNET_ROOT/tools:$HOME/.dotnet/tools:$PATH"
+if ! grep -q 'DOTNET_ROOT="$HOME/.dotnet"' "$HOME/.bashrc"; then
+  echo 'export DOTNET_ROOT="$HOME/.dotnet"' >> "$HOME/.bashrc"
+fi
+if ! grep -q 'PATH="$DOTNET_ROOT:$DOTNET_ROOT/tools:$HOME/.dotnet/tools:$PATH"' "$HOME/.bashrc"; then
+  echo 'export PATH="$DOTNET_ROOT:$DOTNET_ROOT/tools:$HOME/.dotnet/tools:$PATH"' >> "$HOME/.bashrc"
+fi
 dotnet --version
 dotnet tool install --global dotnet-ef || dotnet tool update --global dotnet-ef
-export PATH="$PATH:$HOME/.dotnet/tools"
 dotnet ef --version || true
 
 echo "[4/6] 安裝韌體編譯工具（Pico SDK toolchain）"
