@@ -65,6 +65,18 @@ mkdir -p "$HOME/pico"
 if [ ! -d "$HOME/pico/pico-sdk/.git" ]; then
   git clone --depth=1 https://github.com/raspberrypi/pico-sdk.git "$HOME/pico/pico-sdk"
 fi
+echo "[6.1/6] 初始化 Pico SDK 子模組（lwip/cyw43/mbedtls/tinyusb）"
+git -C "$HOME/pico/pico-sdk" submodule update --init --recursive
+
+echo "[6.2/6] 驗證 Pico SDK 關鍵標頭檔"
+if [ ! -f "$HOME/pico/pico-sdk/lib/cyw43-driver/src/cyw43.h" ]; then
+  echo "ERROR: 缺少 cyw43-driver（找不到 cyw43.h）"
+  exit 1
+fi
+if [ ! -f "$HOME/pico/pico-sdk/lib/lwip/src/include/lwip/apps/sntp.h" ]; then
+  echo "ERROR: 缺少 lwip（找不到 lwip/apps/sntp.h）"
+  exit 1
+fi
 if ! grep -q "PICO_SDK_PATH" "$HOME/.bashrc"; then
   echo 'export PICO_SDK_PATH="$HOME/pico/pico-sdk"' >> "$HOME/.bashrc"
 fi

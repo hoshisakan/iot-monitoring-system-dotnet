@@ -1364,11 +1364,15 @@ int main(void) {
 #endif
 #endif
 
+#if ENABLE_I2C_BOOT_SCAN || ENABLE_PAJ7620_UI_EVENTS
     if (g_paj_diag.detected) {
         g_paj_gesture_ready = paj7620_init_gesture_mode(i2c0);
     } else {
         g_paj_gesture_ready = false;
     }
+#else
+    g_paj_gesture_ready = false;
+#endif
 
 #if ENABLE_LCD1602
     g_lcd_ok = lcd1602_init(&g_lcd, i2c1, LCD1602_I2C_ADDR_7BIT, LCD1602_BACKLIGHT_MASK);
