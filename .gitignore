@@ -485,7 +485,7 @@ FodyWeavers.xsd
 /scripts/git_init.sh
 
 # Ignore the test files
-/app/backend/src/tests
+# /app/backend/src/tests
 
 # Ignore the scripts
 /app/backend/src/scripts
