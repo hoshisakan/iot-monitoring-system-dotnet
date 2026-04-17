@@ -30,13 +30,15 @@ public sealed class SystemController : ControllerBase
             c.Name,
             c.ContainerId,
             c.Status,
+            c.UptimeSec ?? 0,
             c.Ip,
             c.HealthStatus ?? "unknown")).ToList();
 
-        return Ok(new SystemStatusResponse(items, result.WarningCode, result.WarningMessage));
+        return Ok(new SystemStatusResponse(DateTimeOffset.UtcNow, items, result.WarningCode, result.WarningMessage));
     }
 
     public sealed record SystemStatusResponse(
+        DateTimeOffset HostTime,
         IReadOnlyList<SystemStatusItem> Items,
         string? WarningCode,
         string? WarningMessage);
@@ -45,6 +47,7 @@ public sealed class SystemController : ControllerBase
         string ContainerName,
         string ContainerId,
         string Status,
+        long UptimeSec,
         string? Ip,
         string Health);
 }

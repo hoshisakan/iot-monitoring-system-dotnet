@@ -50,6 +50,7 @@ services:
             Mqtt__TlsAllowUntrustedCertificate: "false"
             # 容器內無 Docker socket 時關閉；若掛載 /var/run/docker.sock 可改為 true
             Docker__Enabled: "true"
+            Docker__LimitToComposeProject: "true"
         group_add:
             - "${BACKEND_API_GROUP_ID:-1001}"
         volumes:

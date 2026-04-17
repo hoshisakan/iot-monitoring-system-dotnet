@@ -1,6 +1,7 @@
 using System.Linq;
 using System.Net.Http;
 using System.Net.Sockets;
+using System.Globalization;
 using Docker.DotNet;
 using Docker.DotNet.Models;
 using Microsoft.Extensions.Logging;
@@ -43,13 +44,39 @@ public sealed class DockerSystemClient : IDockerSystemClient
                 new ContainersListParameters { All = includeStopped },
                 cancellationToken).ConfigureAwait(false);
 
-            var items = list.Select(c => new ContainerStatusDto(
-                ContainerId: c.ID,
-                Name: c.Names?.FirstOrDefault()?.TrimStart('/') ?? c.ID,
-                Status: c.State ?? string.Empty,
-                UptimeSec: null,
-                Ip: null,
-                HealthStatus: c.Status)).ToList();
+            if (_options.LimitToComposeProject)
+            {
+                var composeProject = await ResolveComposeProjectNameAsync(client, cancellationToken)
+                    .ConfigureAwait(false);
+                if (!string.IsNullOrWhiteSpace(composeProject))
+                {
+                    list = list
+                        .Where(c => c.Labels is not null
+                                    && c.Labels.TryGetValue("com.docker.compose.project", out var p)
+                                    && string.Equals(p, composeProject, StringComparison.Ordinal))
+                        .ToList();
+                }
+            }
+
+            var items = await Task.WhenAll(list.Select(async c =>
+            {
+                var inspect = await client.Containers.InspectContainerAsync(c.ID, cancellationToken)
+                    .ConfigureAwait(false);
+                var startedAt = ParseDockerDateTime(inspect.State?.StartedAt);
+                var uptimeSec = BuildUptimeSeconds(inspect.State?.Running, startedAt);
+                var ip = inspect.NetworkSettings?.Networks?
+                    .Values.FirstOrDefault(n => !string.IsNullOrWhiteSpace(n.IPAddress))?.IPAddress;
+                var healthStatus = inspect.State?.Health?.Status ?? "unknown";
+
+                return new ContainerStatusDto(
+                    ContainerId: c.ID,
+                    Name: c.Names?.FirstOrDefault()?.TrimStart('/') ?? c.ID,
+                    Status: string.Equals(c.State, "running", StringComparison.OrdinalIgnoreCase) ? "running" : "stopped",
+                    UptimeSec: uptimeSec,
+                    Ip: string.IsNullOrWhiteSpace(ip) ? null : ip,
+                    HealthStatus: healthStatus);
+            })).ConfigureAwait(false);
+
             return new SystemStatusResultDto(
                 Items: items,
                 WarningCode: null,
@@ -95,5 +122,53 @@ public sealed class DockerSystemClient : IDockerSystemClient
         return (
             "DOCKER_UNAVAILABLE",
             $"無法連線 Docker（{dockerUri}）。常見原因：權限不足或 Docker 未啟動。");
+    }
+
+    private async Task<string?> ResolveComposeProjectNameAsync(
+        DockerClient client,
+        CancellationToken cancellationToken)
+    {
+        if (!string.IsNullOrWhiteSpace(_options.ComposeProjectName))
+            return _options.ComposeProjectName;
+
+        var selfContainerId = Environment.GetEnvironmentVariable("HOSTNAME");
+        if (string.IsNullOrWhiteSpace(selfContainerId))
+            return null;
+
+        try
+        {
+            var self = await client.Containers.InspectContainerAsync(selfContainerId, cancellationToken)
+                .ConfigureAwait(false);
+            if (self.Config?.Labels is not null &&
+                self.Config.Labels.TryGetValue("com.docker.compose.project", out var project))
+            {
+                return project;
+            }
+        }
+        catch
+        {
+            // ignore and fallback to no filtering
+        }
+
+        return null;
+    }
+
+    private static DateTimeOffset? ParseDockerDateTime(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return null;
+        if (string.Equals(value, "0001-01-01T00:00:00Z", StringComparison.Ordinal))
+            return null;
+        return DateTimeOffset.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var dt)
+            ? dt
+            : null;
+    }
+
+    private static long BuildUptimeSeconds(bool? running, DateTimeOffset? startedAt)
+    {
+        if (running is not true || startedAt is null)
+            return 0;
+        var seconds = (DateTimeOffset.UtcNow - startedAt.Value).TotalSeconds;
+        return seconds > 0 ? (long)seconds : 0;
     }
 }
