@@ -20,12 +20,19 @@ fi
 node -v
 npm -v
 
-echo "[3/6] 安裝後端（.NET 8 SDK + dotnet-ef）"
+echo "[3/6] 安裝後端（.NET 8/10 SDK + dotnet-ef）"
 DOTNET_ROOT="${DOTNET_ROOT:-$HOME/.dotnet}"
-if ! command -v dotnet >/dev/null 2>&1 || ! dotnet --list-sdks 2>/dev/null | grep -q '^8\.'; then
+if ! command -v dotnet >/dev/null 2>&1 || \
+   ! dotnet --list-sdks 2>/dev/null | grep -q '^8\.' || \
+   ! dotnet --list-sdks 2>/dev/null | grep -q '^10\.'; then
   curl -fsSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh
   chmod +x /tmp/dotnet-install.sh
-  /tmp/dotnet-install.sh --channel 8.0 --install-dir "$DOTNET_ROOT"
+  if ! dotnet --list-sdks 2>/dev/null | grep -q '^8\.'; then
+    /tmp/dotnet-install.sh --channel 8.0 --install-dir "$DOTNET_ROOT"
+  fi
+  if ! dotnet --list-sdks 2>/dev/null | grep -q '^10\.'; then
+    /tmp/dotnet-install.sh --channel 10.0 --install-dir "$DOTNET_ROOT"
+  fi
 fi
 export DOTNET_ROOT="$DOTNET_ROOT"
 export PATH="$DOTNET_ROOT:$DOTNET_ROOT/tools:$HOME/.dotnet/tools:$PATH"
