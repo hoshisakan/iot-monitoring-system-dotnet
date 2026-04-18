@@ -497,6 +497,8 @@ FodyWeavers.xsd
 /logs
 /conf/nginx/certs
 /conf/mqtt_broker/certs
+/conf/cloudflared/credentials.json
+/conf/cloudflared/config.yml
 /data
 .env
 /app/backend/db/seed_users_manual.sql
@@ -505,3 +507,4 @@ FodyWeavers.xsd
 .nuget-http-cache
 /scripts/perf
 *.lscache
+/scripts/backend/generate-backend-cs-inventory.py

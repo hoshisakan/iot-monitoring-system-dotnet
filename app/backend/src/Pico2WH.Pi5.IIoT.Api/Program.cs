@@ -1,7 +1,9 @@
+using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -24,6 +26,28 @@ builder.Host.UseSerilog();
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+
+// 反向代理（Nginx／Cloudflare Tunnel）後還原 X-Forwarded-Proto／For
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.ForwardLimit = 2;
+});
+builder.Services.PostConfigure<ForwardedHeadersOptions>(options =>
+{
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+    foreach (var (addr, prefix) in new (string, int)[]
+         {
+             ("10.0.0.0", 8),
+             ("172.16.0.0", 12),
+             ("192.168.0.0", 16)
+         })
+    {
+        options.KnownNetworks.Add(
+            new Microsoft.AspNetCore.HttpOverrides.IPNetwork(IPAddress.Parse(addr), prefix));
+    }
+});
 
 builder.Services.AddControllers()
     .AddJsonOptions(o =>
@@ -84,6 +108,8 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
+
+app.UseForwardedHeaders();
 
 if (app.Configuration.GetSection(DatabaseOptions.SectionName).Get<DatabaseOptions>()?.AutoMigrate ?? true)
 {

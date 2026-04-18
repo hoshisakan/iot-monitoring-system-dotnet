@@ -1,0 +1,3 @@
+ARG CLOUDFLARED_VERSION
+
+FROM cloudflare/cloudflared:${CLOUDFLARED_VERSION}

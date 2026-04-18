@@ -140,6 +140,7 @@ npm run dev
 - **`docker-compose.yml`**：協調 **Mosquitto**、**PostgreSQL**、**Nginx**、後端 API 等；啟動時讀取專案根目錄 **`.env`**。
 - **`conf/`**：**Nginx**、**MQTT Broker**、**PostgreSQL**／**PgAdmin** 等映像與設定檔。
 - **`scripts/setup/`**：**MQTT**／**Nginx** 憑證產生輔助腳本。
+- **`conf/cloudflared/README.md`**：**Cloudflare Tunnel**（與 `docker compose --profile cloudflare`、Nginx **真實 IP**、後端 **ForwardedHeaders** 對齊說明）。
 - **`tests/postman/`**：**API** **Postman** 集合（若已納入版本庫）。
 
 ---

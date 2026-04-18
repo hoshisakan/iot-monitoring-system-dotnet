@@ -1,0 +1,16 @@
+# 複製為 config.yml 並填入 tunnel id／憑證路徑（勿提交含秘密的檔案）。
+# 與「儀表板 token 模式」擇一使用；本檔適用「具名 tunnel + 本機憑證」。
+#
+# 回源至 Compose 內 Nginx 的 HTTPS（自簽憑證需 noTLSVerify）。
+# 若改為 http://nginx:80，須注意 default.conf 將 HTTP 301 至 HTTPS，可能不適合當 origin。
+
+tunnel: YOUR_TUNNEL_ID_UUID
+credentials-file: /etc/cloudflared/credentials.json
+
+ingress:
+  - hostname: dashboard.example.com
+    service: https://nginx:443
+    originRequest:
+      noTLSVerify: true
+      connectTimeout: 30s
+  - service: http_status:404
