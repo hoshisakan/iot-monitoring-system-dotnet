@@ -1,0 +1,31 @@
+.navbar {
+  border-right: 1px solid light-dark(var(--mantine-color-dark-4), var(--mantine-color-dark-4));
+  background: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
+}
+
+.header {
+  border-bottom: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+  background: light-dark(var(--mantine-color-body), var(--mantine-color-dark-7));
+}
+
+.link {
+  display: block;
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+  border-radius: var(--mantine-radius-md);
+  color: var(--mantine-color-dimmed);
+  text-decoration: none;
+  font-size: var(--mantine-font-size-sm);
+  margin-bottom: 4px;
+  transition: background 120ms ease;
+}
+
+.link:hover {
+  background: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6));
+  color: var(--mantine-color-text);
+}
+
+.linkActive {
+  background: rgba(18, 184, 134, 0.12);
+  color: var(--mantine-color-teal-4);
+  font-weight: 600;
+}
