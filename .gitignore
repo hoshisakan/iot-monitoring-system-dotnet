@@ -493,7 +493,8 @@ FodyWeavers.xsd
 /app/backend/src/scripts
 
 # Ignore the documents
-/docs
+# /docs
+/docs/others
 
 # Ignore the specification files
 /logs
