@@ -90,8 +90,8 @@ x86/
 bld/
 [Bb]in/
 [Oo]bj/
-[Ll]og/
-[Ll]ogs/
+# 注意：勿使用全域 [Ll]ogs/，會誤傷程式碼路徑如 Application/Features/Logs/。
+# 執行期／專案根目錄日誌目錄見下方 `/logs`。
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/
