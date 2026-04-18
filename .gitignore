@@ -510,3 +510,4 @@ FodyWeavers.xsd
 /scripts/perf
 *.lscache
 /scripts/backend/generate-backend-cs-inventory.py
+/app/firmware/secrets_for_pi5.h
