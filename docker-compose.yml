@@ -40,9 +40,20 @@ services:
             ASPNETCORE_URLS: "http://+:${BACKEND_API_INSIDE_PORT}"
             ASPNETCORE_ENVIRONMENT: ${BACKEND_API_ASPNETCORE_ENVIRONMENT}
             ConnectionStrings__Default: "Host=${DATABASE_HOST};Port=${POSTGRES_INSIDE_PORT};Database=${BACKEND_API_DATABASE_NAME};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+            Database__AutoMigrate: ${BACKEND_API_DATABASE_AUTO_MIGRATE}
             # 對應 appsettings 之 Database:DefaultSchema（EF Core 表所屬 schema）
             Database__DefaultSchema: ${BACKEND_API_DATABASE_DEFAULT_SCHEMA:-dev}
             Jwt__SigningKey: ${BACKEND_API_JWT_SIGNING_KEY}
+            Jwt__Issuer: ${BACKEND_API_JWT_ISSUER}
+            Jwt__Audience: ${BACKEND_API_JWT_AUDIENCE}
+            Jwt__AccessTokenMinutes: ${BACKEND_API_JWT_ACCESS_TOKEN_MINUTES}
+            Jwt__RefreshTokenDays: ${BACKEND_API_JWT_REFRESH_TOKEN_DAYS}
+            Mqtt__Enabled: ${BACKEND_API_MQTT_ENABLED}
+            Mqtt__IngestEnabled: ${BACKEND_API_MQTT_INGEST_ENABLED}
+            # ASP.NET Core 需以索引鍵繫結 List<string>（單一 JSON 字串無法正確綁定）
+            Mqtt__SubscribeTopicFilters__0: ${BACKEND_API_MQTT_SUBSCRIBE_TOPIC_FILTER_0}
+            Mqtt__SubscribeTopicFilters__1: ${BACKEND_API_MQTT_SUBSCRIBE_TOPIC_FILTER_1}
+            Mqtt__SubscribeTopicFilters__2: ${BACKEND_API_MQTT_SUBSCRIBE_TOPIC_FILTER_2}
             Mqtt__Host: ${BACKEND_API_MOSQUITTO_HOST_NAME}
             Mqtt__Port: ${MOSQUITTO_TLS_INSIDE_PORT}
             Mqtt__Username: ${MOSQUITTO_USERNAME}
@@ -52,6 +63,7 @@ services:
             Mqtt__TlsAllowUntrustedCertificate: "false"
             # 容器內無 Docker socket 時關閉；若掛載 /var/run/docker.sock 可改為 true
             Docker__Enabled: "true"
+            Docker__Uri: "unix:///var/run/docker.sock"
             Docker__LimitToComposeProject: "true"
         group_add:
             - "${BACKEND_API_GROUP_ID:-1001}"
