@@ -19,6 +19,6 @@ public sealed class SeriesTelemetryQueryHandler : IRequestHandler<SeriesTelemetr
             request.Metrics,
             request.FromUtc,
             request.ToUtc,
-            request.MaxPoints,
+            request.MaxPoints ?? 500,
             cancellationToken);
 }

@@ -1,11 +1,15 @@
 namespace Pico2WH.Pi5.IIoT.Application.Common.Models;
 
-/// <summary>對齊 <c>GET /api/v1/telemetry/series</c> 回應形狀（簡化版）。</summary>
+/// <summary>對齊 <c>GET /api/v1/telemetry/series</c> 與規格書 §6.0.4 metadata。</summary>
 public sealed record SeriesTelemetryResult(
     string DeviceId,
     DateTime FromUtc,
     DateTime ToUtc,
-    IReadOnlyList<SeriesMetricDto> Series);
+    IReadOnlyList<SeriesMetricDto> Series,
+    bool Downsampled,
+    int SourcePoints,
+    int ReturnedPoints,
+    long BucketWidthMs);
 
 public sealed record SeriesMetricDto(
     string Metric,

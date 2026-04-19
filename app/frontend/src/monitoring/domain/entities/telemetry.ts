@@ -40,5 +40,10 @@ export interface TelemetrySeriesResponse {
   device_id: string
   from_utc?: string
   to_utc?: string
+  /** 對齊後端 §6.0.4 metadata（snake_case JSON） */
+  downsampled?: boolean
+  source_points?: number
+  returned_points?: number
+  bucket_width_ms?: number
   series: TelemetrySeriesItem[]
 }

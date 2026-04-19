@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text;
 using System.Text.RegularExpressions;
 using Dapper;
 using Microsoft.Extensions.Options;
@@ -8,34 +10,34 @@ using Pico2WH.Pi5.IIoT.Infrastructure.Persistence;
 namespace Pico2WH.Pi5.IIoT.Infrastructure.Queries;
 
 /// <summary>
-/// Dapper implementation for telemetry series query.
-/// Keeps API response contract unchanged while moving read path off EF change tracking.
+/// 遙測時序：優先於 PostgreSQL 以 <c>date_bin</c> 分桶聚合，避免長區間全量載入記憶體。
+/// 對齊規格書 §6.0.4（<c>max_points</c>、metadata、時間桶 avg／<c>pir_active</c> 用 bool_or）。
 /// </summary>
 public sealed class TelemetrySeriesDapperQueryService : ITelemetrySeriesQuery
 {
     private static readonly Regex SafeIdentifier = new("^[a-zA-Z_][a-zA-Z0-9_]*$", RegexOptions.Compiled);
 
-    private sealed record MetricSpec(string ColumnName, string? Unit);
+    private sealed record MetricSpec(string ColumnName, string DbColumn, string? Unit, bool IsBoolean);
 
     private static readonly IReadOnlyDictionary<string, MetricSpec> AllowedMetrics =
         new Dictionary<string, MetricSpec>(StringComparer.OrdinalIgnoreCase)
         {
-            ["temperature_c"] = new("TemperatureC", "C"),
-            ["humidity_pct"] = new("HumidityPct", "%"),
-            ["lux"] = new("Lux", "lx"),
-            ["co2_ppm"] = new("Co2Ppm", "ppm"),
-            ["temperature_c_scd41"] = new("TemperatureCScd41", "C"),
-            ["humidity_pct_scd41"] = new("HumidityPctScd41", "%"),
-            ["pir_active"] = new("PirActive", null),
-            ["pressure_hpa"] = new("PressureHpa", "hPa"),
-            ["gas_resistance_ohm"] = new("GasResistanceOhm", "ohm"),
-            ["accel_x"] = new("AccelX", "g"),
-            ["accel_y"] = new("AccelY", "g"),
-            ["accel_z"] = new("AccelZ", "g"),
-            ["gyro_x"] = new("GyroX", "dps"),
-            ["gyro_y"] = new("GyroY", "dps"),
-            ["gyro_z"] = new("GyroZ", "dps"),
-            ["rssi"] = new("Rssi", "dBm")
+            ["temperature_c"] = new("TemperatureC", "temperature_c", "C", false),
+            ["humidity_pct"] = new("HumidityPct", "humidity_pct", "%", false),
+            ["lux"] = new("Lux", "lux", "lx", false),
+            ["co2_ppm"] = new("Co2Ppm", "co2_ppm", "ppm", false),
+            ["temperature_c_scd41"] = new("TemperatureCScd41", "temperature_c_scd41", "C", false),
+            ["humidity_pct_scd41"] = new("HumidityPctScd41", "humidity_pct_scd41", "%", false),
+            ["pir_active"] = new("PirActive", "pir_active", null, true),
+            ["pressure_hpa"] = new("PressureHpa", "pressure_hpa", "hPa", false),
+            ["gas_resistance_ohm"] = new("GasResistanceOhm", "gas_resistance_ohm", "ohm", false),
+            ["accel_x"] = new("AccelX", "accel_x", "g", false),
+            ["accel_y"] = new("AccelY", "accel_y", "g", false),
+            ["accel_z"] = new("AccelZ", "accel_z", "g", false),
+            ["gyro_x"] = new("GyroX", "gyro_x", "dps", false),
+            ["gyro_y"] = new("GyroY", "gyro_y", "dps", false),
+            ["gyro_z"] = new("GyroZ", "gyro_z", "dps", false),
+            ["rssi"] = new("Rssi", "rssi", "dBm", false),
         };
 
     private readonly IDbConnectionFactory _connectionFactory;
@@ -60,6 +62,7 @@ public sealed class TelemetrySeriesDapperQueryService : ITelemetrySeriesQuery
         int? maxPoints,
         CancellationToken cancellationToken = default)
     {
+        var targetPoints = Math.Clamp(maxPoints ?? 500, 10, 5000);
         var requested = metrics
             .Select(m => m.Trim())
             .Where(m => AllowedMetrics.ContainsKey(m))
@@ -67,51 +70,115 @@ public sealed class TelemetrySeriesDapperQueryService : ITelemetrySeriesQuery
             .ToList();
 
         if (requested.Count == 0)
-            return new SeriesTelemetryResult(deviceId, fromUtc, toUtc, Array.Empty<SeriesMetricDto>());
+        {
+            return new SeriesTelemetryResult(
+                deviceId, fromUtc, toUtc, Array.Empty<SeriesMetricDto>(),
+                false, 0, 0, 0);
+        }
 
-        var sql = $"""
-            SELECT
-                device_time AS DeviceTimeUtc,
-                temperature_c AS TemperatureC,
-                humidity_pct AS HumidityPct,
-                lux AS Lux,
-                co2_ppm AS Co2Ppm,
-                temperature_c_scd41 AS TemperatureCScd41,
-                humidity_pct_scd41 AS HumidityPctScd41,
-                pir_active AS PirActive,
-                pressure_hpa AS PressureHpa,
-                gas_resistance_ohm AS GasResistanceOhm,
-                accel_x AS AccelX,
-                accel_y AS AccelY,
-                accel_z AS AccelZ,
-                gyro_x AS GyroX,
-                gyro_y AS GyroY,
-                gyro_z AS GyroZ,
-                rssi AS Rssi
+        var rangeMs = (long)Math.Ceiling((toUtc - fromUtc).TotalMilliseconds);
+        var bucketWidthMs = rangeMs > 0
+            ? (long)Math.Ceiling(rangeMs / (double)targetPoints)
+            : 0L;
+
+        await using var conn = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+
+        var countSql = $"""
+            SELECT COUNT(*)::bigint
+            FROM "{_schema}"."telemetry_records"
+            WHERE device_id = @DeviceId
+              AND device_time >= @FromUtc
+              AND device_time <= @ToUtc
+            """;
+
+        var sourcePoints = Convert.ToInt64(
+            await conn.ExecuteScalarAsync(
+                    new CommandDefinition(
+                        countSql,
+                        new { DeviceId = deviceId, FromUtc = fromUtc, ToUtc = toUtc },
+                        cancellationToken: cancellationToken))
+                .ConfigureAwait(false),
+            CultureInfo.InvariantCulture);
+
+        var sourcePointsInt = sourcePoints > int.MaxValue ? int.MaxValue : (int)sourcePoints;
+
+        if (sourcePoints == 0)
+        {
+            return new SeriesTelemetryResult(
+                deviceId, fromUtc, toUtc, Array.Empty<SeriesMetricDto>(),
+                false, 0, 0, 0);
+        }
+
+        IReadOnlyList<SeriesMetricDto> series;
+        bool downsampled;
+        int returnedPoints;
+
+        if (sourcePoints <= targetPoints)
+        {
+            series = await LoadRawSeriesAsync(
+                    conn, deviceId, fromUtc, toUtc, requested, cancellationToken)
+                .ConfigureAwait(false);
+            downsampled = false;
+            returnedPoints = sourcePointsInt;
+        }
+        else
+        {
+            series = await LoadBucketedSeriesAsync(
+                    conn, deviceId, fromUtc, toUtc, requested, targetPoints, cancellationToken)
+                .ConfigureAwait(false);
+            downsampled = true;
+            returnedPoints = series.Count == 0 ? 0 : series.Max(s => s.Points.Count);
+        }
+
+        return new SeriesTelemetryResult(
+            deviceId,
+            fromUtc,
+            toUtc,
+            series,
+            downsampled,
+            sourcePointsInt,
+            returnedPoints,
+            bucketWidthMs);
+    }
+
+    private async Task<IReadOnlyList<SeriesMetricDto>> LoadRawSeriesAsync(
+        System.Data.Common.DbConnection conn,
+        string deviceId,
+        DateTime fromUtc,
+        DateTime toUtc,
+        IReadOnlyList<string> requested,
+        CancellationToken cancellationToken)
+    {
+        var sb = new StringBuilder();
+        sb.Append("SELECT device_time AS \"DeviceTimeUtc\"");
+        foreach (var m in requested)
+        {
+            var spec = AllowedMetrics[m];
+            sb.Append(CultureInfo.InvariantCulture, $", {spec.DbColumn} AS \"{spec.ColumnName}\"");
+        }
+
+        sb.Append(CultureInfo.InvariantCulture, $"""
+            
             FROM "{_schema}"."telemetry_records"
             WHERE device_id = @DeviceId
               AND device_time >= @FromUtc
               AND device_time <= @ToUtc
             ORDER BY device_time ASC
-            """;
+            """);
 
-        await using var conn = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken).ConfigureAwait(false);
         var rows = (await conn.QueryAsync<TelemetrySeriesRow>(
                 new CommandDefinition(
-                    sql,
+                    sb.ToString(),
                     new { DeviceId = deviceId, FromUtc = fromUtc, ToUtc = toUtc },
                     cancellationToken: cancellationToken))
             .ConfigureAwait(false))
             .ToList();
 
-        var cap = maxPoints is > 0 and < 50_000 ? maxPoints.Value : 2000;
         var series = new List<SeriesMetricDto>(requested.Count);
-
         foreach (var metric in requested)
         {
             var spec = AllowedMetrics[metric];
             var points = new List<SeriesPointDto>();
-
             foreach (var r in rows)
             {
                 if (!TryGetMetricValue(r, spec.ColumnName, out var value))
@@ -119,14 +186,82 @@ public sealed class TelemetrySeriesDapperQueryService : ITelemetrySeriesQuery
                 points.Add(new SeriesPointDto(r.DeviceTimeUtc, value));
             }
 
-            if (points.Count == 0)
-                continue;
-
-            points = Downsample(points, cap);
-            series.Add(new SeriesMetricDto(metric, spec.Unit, points));
+            if (points.Count > 0)
+                series.Add(new SeriesMetricDto(metric, spec.Unit, points));
         }
 
-        return new SeriesTelemetryResult(deviceId, fromUtc, toUtc, series);
+        return series;
+    }
+
+    private async Task<IReadOnlyList<SeriesMetricDto>> LoadBucketedSeriesAsync(
+        System.Data.Common.DbConnection conn,
+        string deviceId,
+        DateTime fromUtc,
+        DateTime toUtc,
+        IReadOnlyList<string> requested,
+        int targetPoints,
+        CancellationToken cancellationToken)
+    {
+        var sb = new StringBuilder();
+        sb.Append("""
+            SELECT
+              date_bin(
+                ((@ToUtc::timestamptz - @FromUtc::timestamptz) / @TargetPoints::double precision),
+                device_time::timestamptz,
+                @FromUtc::timestamptz
+              ) AS "DeviceTimeUtc"
+            """);
+
+        foreach (var m in requested)
+        {
+            var spec = AllowedMetrics[m];
+            if (spec.IsBoolean)
+            {
+                sb.Append(CultureInfo.InvariantCulture,
+                    $", bool_or({spec.DbColumn}) AS \"{spec.ColumnName}\"");
+            }
+            else
+            {
+                sb.Append(CultureInfo.InvariantCulture,
+                    $", avg({spec.DbColumn}) AS \"{spec.ColumnName}\"");
+            }
+        }
+
+        sb.Append(CultureInfo.InvariantCulture, $"""
+
+            FROM "{_schema}"."telemetry_records"
+            WHERE device_id = @DeviceId
+              AND device_time >= @FromUtc
+              AND device_time <= @ToUtc
+            GROUP BY 1
+            ORDER BY 1 ASC
+            """);
+
+        var rows = (await conn.QueryAsync<TelemetrySeriesRow>(
+                new CommandDefinition(
+                    sb.ToString(),
+                    new { DeviceId = deviceId, FromUtc = fromUtc, ToUtc = toUtc, TargetPoints = targetPoints },
+                    cancellationToken: cancellationToken))
+            .ConfigureAwait(false))
+            .ToList();
+
+        var series = new List<SeriesMetricDto>(requested.Count);
+        foreach (var metric in requested)
+        {
+            var spec = AllowedMetrics[metric];
+            var points = new List<SeriesPointDto>();
+            foreach (var r in rows)
+            {
+                if (!TryGetMetricValue(r, spec.ColumnName, out var value))
+                    continue;
+                points.Add(new SeriesPointDto(r.DeviceTimeUtc, value));
+            }
+
+            if (points.Count > 0)
+                series.Add(new SeriesMetricDto(metric, spec.Unit, points));
+        }
+
+        return series;
     }
 
     private static bool TryGetMetricValue(TelemetrySeriesRow row, string metricColumn, out object? value)
@@ -139,7 +274,7 @@ public sealed class TelemetrySeriesDapperQueryService : ITelemetrySeriesQuery
             "Co2Ppm" => row.Co2Ppm,
             "TemperatureCScd41" => row.TemperatureCScd41,
             "HumidityPctScd41" => row.HumidityPctScd41,
-            "PirActive" => row.PirActive,
+            "PirActive" => row.PirActive.HasValue ? row.PirActive.Value : null,
             "PressureHpa" => row.PressureHpa,
             "GasResistanceOhm" => row.GasResistanceOhm,
             "AccelX" => row.AccelX,
@@ -152,23 +287,6 @@ public sealed class TelemetrySeriesDapperQueryService : ITelemetrySeriesQuery
             _ => null
         };
         return value is not null;
-    }
-
-    private static List<SeriesPointDto> Downsample(IReadOnlyList<SeriesPointDto> points, int max)
-    {
-        if (points.Count <= max)
-            return points.ToList();
-
-        var stride = (double)points.Count / max;
-        var result = new List<SeriesPointDto>(max);
-        for (var i = 0; i < max; i++)
-        {
-            var idx = (int)(i * stride);
-            if (idx >= points.Count)
-                idx = points.Count - 1;
-            result.Add(points[idx]);
-        }
-        return result;
     }
 
     private sealed class TelemetrySeriesRow
@@ -189,6 +307,6 @@ public sealed class TelemetrySeriesDapperQueryService : ITelemetrySeriesQuery
         public double? GyroX { get; init; }
         public double? GyroY { get; init; }
         public double? GyroZ { get; init; }
-        public int? Rssi { get; init; }
+        public double? Rssi { get; init; }
     }
 }

@@ -1762,12 +1762,12 @@ Pico 2 WH on breadboard
 ##### A.0 讀取路徑：EF Core 與 Dapper（後端實作）
 
 - **Schema 與寫入**：資料表仍以 **EF Core Migration** 與 **`ApplicationDbContext`** 為單一結構來源；**MQTT ingest 落庫**、一般 **Command／Repository 寫入** 以 **EF Core** 為準。
-- **讀取查詢**：下列 HTTP 讀路在實作上可於 **Dapper** 與 **EF Core** 間切換（預設 **Dapper**），用於列表／時序等查詢；第二層僅依賴介面（如 `ILogQueryRepository`、`ITelemetrySeriesQuery`、`IUiEventsQuery`），與具體技術解耦。
-  - 結構化日誌列表（對應 `GET /api/v1/logs` 之 DB 查詢路徑）
-  - 遙測時序（對應 `GET /api/v1/telemetry/series`）
-  - UI 事件列表（對應 `GET /api/v1/ui-events`）
-- **組態**（`Database`）：`UseDapperForLogsQuery`、`UseDapperForTelemetrySeries`、`UseDapperForUiEventsQuery` — 設為 `false` 時改走對應 EF 實作以利除錯或回退；預設均為 `true`。
-- **完整檔案位置、DI、連線與整合測試（EfDapperParity）** 以 `Pico2WH-Pi5-IIoT-專案開發規格書_v5_ASPNETCORE_4LAYER.md` **§2.4.1a** 為後端 SoT。
+- **讀取查詢**：第二層僅依賴介面（如 `ILogQueryRepository`、`ITelemetrySeriesQuery`、`IUiEventsQuery`），與具體技術解耦；**HTTP 讀路徑**（日誌列表、UI 事件、遙測時序）實作均為 **Dapper**／**PostgreSQL** 參數化 SQL（**無** EF／Dapper 切換旗標）。
+  - 結構化日誌列表（`GET /api/v1/logs`）：`LogDapperQueryRepository`。
+  - 遙測時序（`GET /api/v1/telemetry/series`）：`TelemetrySeriesDapperQueryService`（SQL 側聚合）。
+  - UI 事件列表（`GET /api/v1/ui-events`）：`UiEventsDapperQuery`。
+- **組態**（`Database`）：以 **`DefaultSchema`**、**`AutoMigrate`** 等為主（見 `DatabaseOptions`）。
+- **完整檔案位置、DI、連線與整合測試（DapperReadQueryTests）** 以 `Pico2WH-Pi5-IIoT-專案開發規格書_v5_ASPNETCORE_4LAYER.md` **§2.4.1a** 為後端 SoT。
 
 ##### A.1 PostgreSQL 資料表設計（Telemetry 主表）
 

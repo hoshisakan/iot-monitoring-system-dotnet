@@ -142,7 +142,7 @@ export function TelemetryDashboardPage() {
         from: sf,
         to: st,
         metrics,
-        maxPoints: 2000,
+        maxPoints: 500,
       })
       setSeriesData(data)
     } catch (e) {
@@ -300,6 +300,9 @@ export function TelemetryDashboardPage() {
               <Text size="xs" c="dimmed" mb="xs">
                 device_id: {seriesData?.device_id ?? '—'} · from_utc: {seriesData?.from_utc ?? '—'} · to_utc:{' '}
                 {seriesData?.to_utc ?? '—'}
+                {seriesData?.downsampled != null
+                  ? ` · downsampled=${String(seriesData.downsampled)} · source_points=${String(seriesData.source_points ?? '—')} · returned_points=${String(seriesData.returned_points ?? '—')}`
+                  : ''}
               </Text>
               <svg width={chartWidth} height={chartHeight}>
                 <line x1={chartPadding} y1={chartPadding} x2={chartPadding} y2={chartHeight - chartPadding} stroke="#adb5bd" />

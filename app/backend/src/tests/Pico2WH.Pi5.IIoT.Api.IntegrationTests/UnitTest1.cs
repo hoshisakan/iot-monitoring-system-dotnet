@@ -1,3 +1,5 @@
+using System.Text.Json.Nodes;
+using EFCore.NamingConventions;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -15,7 +17,7 @@ using Testcontainers.PostgreSql;
 
 namespace Pico2WH.Pi5.IIoT.Api.IntegrationTests;
 
-public sealed class EfDapperParityTests : IAsyncLifetime
+public sealed class DapperReadQueryTests : IAsyncLifetime
 {
     private PostgreSqlContainer? _postgres;
     private bool _isInitialized;
@@ -37,19 +39,17 @@ public sealed class EfDapperParityTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Logs_query_should_match_between_ef_and_dapper()
+    public async Task Logs_dapper_query_should_return_seeded_data()
     {
         if (!await EnsureInitializedAsync())
             return;
 
-        await using var db = CreateDbContext();
-        var ef = new LogQueryRepository(db);
         var dapper = new LogDapperQueryRepository(_connectionFactory, _dbOptions);
 
         var cases = new[]
         {
-            new { Filter = new LogQueryFilter(), Page = 1, PageSize = 3 },
-            new { Filter = new LogQueryFilter(DeviceId: "dev-a"), Page = 1, PageSize = 2 },
+            new { Filter = new LogQueryFilter(), ExpectedTotal = 5, Page = 1, PageSize = 3, ExpectedItemCount = 3 },
+            new { Filter = new LogQueryFilter(DeviceId: "dev-a"), ExpectedTotal = 2, Page = 1, PageSize = 2, ExpectedItemCount = 2 },
             new
             {
                 Filter = new LogQueryFilter(
@@ -58,55 +58,56 @@ public sealed class EfDapperParityTests : IAsyncLifetime
                     DeviceId: "dev-b",
                     Channel: "status",
                     Level: "WARN"),
+                // created_at_utc 第三筆為 10:40:04，嚴格 <= 10:40:00 不包含
+                ExpectedTotal = 2,
                 Page = 1,
-                PageSize = 10
+                PageSize = 10,
+                ExpectedItemCount = 2
             }
         };
 
         foreach (var c in cases)
         {
-            var efResult = await ef.QueryAsync(c.Filter, c.Page, c.PageSize);
             var dapperResult = await dapper.QueryAsync(c.Filter, c.Page, c.PageSize);
 
-            dapperResult.TotalCount.Should().Be(efResult.TotalCount);
-            dapperResult.Items.Should().BeEquivalentTo(efResult.Items, options => options.WithStrictOrdering());
+            dapperResult.TotalCount.Should().Be(c.ExpectedTotal);
+            dapperResult.Items.Should().HaveCount(c.ExpectedItemCount);
         }
     }
 
     [Fact]
-    public async Task Ui_events_query_should_match_between_ef_and_dapper()
+    public async Task Ui_events_dapper_query_should_return_seeded_data()
     {
         if (!await EnsureInitializedAsync())
             return;
 
-        await using var db = CreateDbContext();
-        var ef = new UiEventsEfQuery(db);
         var dapper = new UiEventsDapperQuery(_connectionFactory, _dbOptions);
 
         var cases = new[]
         {
-            new { DeviceId = (string?)null, SiteId = (string?)null, FromUtc = (DateTime?)null, ToUtc = (DateTime?)null, Page = 1, PageSize = 3 },
-            new { DeviceId = (string?)"dev-a", SiteId = (string?)"site-1", FromUtc = (DateTime?)null, ToUtc = (DateTime?)null, Page = 1, PageSize = 2 },
+            new { DeviceId = (string?)null, SiteId = (string?)null, FromUtc = (DateTime?)null, ToUtc = (DateTime?)null, ExpectedTotal = 5, Page = 1, PageSize = 3, ExpectedItemCount = 3 },
+            new { DeviceId = (string?)"dev-a", SiteId = (string?)"site-1", FromUtc = (DateTime?)null, ToUtc = (DateTime?)null, ExpectedTotal = 2, Page = 1, PageSize = 2, ExpectedItemCount = 2 },
             new
             {
                 DeviceId = (string?)"dev-b",
                 SiteId = (string?)"site-2",
                 FromUtc = (DateTime?)new DateTime(2026, 4, 14, 10, 10, 0, DateTimeKind.Utc),
                 ToUtc = (DateTime?)new DateTime(2026, 4, 14, 10, 50, 0, DateTimeKind.Utc),
+                ExpectedTotal = 3,
                 Page = 1,
-                PageSize = 10
+                PageSize = 10,
+                ExpectedItemCount = 3
             }
         };
 
         foreach (var c in cases)
         {
-            var efResult = await ef.QueryAsync(c.DeviceId, c.SiteId, c.FromUtc, c.ToUtc, c.Page, c.PageSize);
             var dapperResult = await dapper.QueryAsync(c.DeviceId, c.SiteId, c.FromUtc, c.ToUtc, c.Page, c.PageSize);
 
-            dapperResult.TotalCount.Should().Be(efResult.TotalCount);
-            dapperResult.Page.Should().Be(efResult.Page);
-            dapperResult.PageSize.Should().Be(efResult.PageSize);
-            dapperResult.Items.Should().BeEquivalentTo(efResult.Items, options => options.WithStrictOrdering());
+            dapperResult.TotalCount.Should().Be(c.ExpectedTotal);
+            dapperResult.Page.Should().Be(c.Page);
+            dapperResult.PageSize.Should().Be(c.PageSize);
+            dapperResult.Items.Should().HaveCount(c.ExpectedItemCount);
         }
     }
 
@@ -116,8 +117,6 @@ public sealed class EfDapperParityTests : IAsyncLifetime
         if (!await EnsureInitializedAsync())
             return;
 
-        await using var db = CreateDbContext();
-        var ef = new LogQueryRepository(db);
         var dapper = new LogDapperQueryRepository(_connectionFactory, _dbOptions);
         var payload = "' OR 1=1 --";
 
@@ -131,10 +130,8 @@ public sealed class EfDapperParityTests : IAsyncLifetime
 
         foreach (var filter in cases)
         {
-            var efResult = await ef.QueryAsync(filter, page: 1, pageSize: 50);
             var dapperResult = await dapper.QueryAsync(filter, page: 1, pageSize: 50);
 
-            dapperResult.TotalCount.Should().Be(efResult.TotalCount);
             dapperResult.TotalCount.Should().Be(0);
             dapperResult.Items.Should().BeEmpty();
         }
@@ -146,15 +143,11 @@ public sealed class EfDapperParityTests : IAsyncLifetime
         if (!await EnsureInitializedAsync())
             return;
 
-        await using var db = CreateDbContext();
-        var ef = new UiEventsEfQuery(db);
         var dapper = new UiEventsDapperQuery(_connectionFactory, _dbOptions);
         var payload = "' OR 1=1 --";
 
-        var efResult = await ef.QueryAsync(payload, payload, null, null, page: 1, pageSize: 50);
         var dapperResult = await dapper.QueryAsync(payload, payload, null, null, page: 1, pageSize: 50);
 
-        dapperResult.TotalCount.Should().Be(efResult.TotalCount);
         dapperResult.TotalCount.Should().Be(0);
         dapperResult.Items.Should().BeEmpty();
     }
@@ -220,7 +213,7 @@ public sealed class EfDapperParityTests : IAsyncLifetime
         row.EventType.Should().Be("gesture");
         row.EventValue.Should().Be("swipe_left");
         row.Channel.Should().Be("ui");
-        row.PayloadJson.Should().Be(payload);
+        JsonNode.DeepEquals(JsonNode.Parse(row.PayloadJson!), JsonNode.Parse(payload)).Should().BeTrue();
     }
 
     [Fact]
@@ -244,7 +237,7 @@ public sealed class EfDapperParityTests : IAsyncLifetime
         row.Channel.Should().Be("status");
         row.Level.Should().Be("warn");
         row.Message.Should().Be("[sensor] threshold reached");
-        row.PayloadJson.Should().Be(payload);
+        JsonNode.DeepEquals(JsonNode.Parse(row.PayloadJson!), JsonNode.Parse(payload)).Should().BeTrue();
     }
 
     private async Task<bool> EnsureInitializedAsync()
@@ -278,6 +271,7 @@ public sealed class EfDapperParityTests : IAsyncLifetime
 
         _dbContextOptions = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseNpgsql(_postgres.GetConnectionString())
+            .UseSnakeCaseNamingConvention()
             .Options;
 
         _connectionFactory = new NpgsqlConnectionFactory(

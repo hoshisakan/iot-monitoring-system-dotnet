@@ -122,7 +122,6 @@ services:
         image: ${CONTAINER_AUTHOR}/${PROJECT_NAME}/postgresql:${POSTGRES_VERSION}
         container_name: ${PROJECT_NAME}_postgresql
         environment:
-            - DATABASE_HOST=${DATABASE_HOST}
             - POSTGRES_USER=${POSTGRES_USER}
             - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
             - POSTGRES_DB=${POSTGRES_DB}

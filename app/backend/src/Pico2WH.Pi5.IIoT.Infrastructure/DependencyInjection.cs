@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Pico2WH.Pi5.IIoT.Application.Common.Interfaces;
 using Pico2WH.Pi5.IIoT.Domain.Repositories;
 using Pico2WH.Pi5.IIoT.Infrastructure.Docker;
@@ -43,15 +42,7 @@ public static class DependencyInjection
         services.AddScoped<ITelemetryRepository, TelemetryRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
-        services.AddScoped<LogQueryRepository>();
-        services.AddScoped<LogDapperQueryRepository>();
-        services.AddScoped<ILogQueryRepository>(sp =>
-        {
-            var options = sp.GetRequiredService<IOptions<DatabaseOptions>>().Value;
-            return options.UseDapperForLogsQuery
-                ? sp.GetRequiredService<LogDapperQueryRepository>()
-                : sp.GetRequiredService<LogQueryRepository>();
-        });
+        services.AddScoped<ILogQueryRepository, LogDapperQueryRepository>();
         services.AddScoped<IDeviceControlAuditRepository, DeviceControlAuditRepository>();
 
         services.AddSingleton<IJwtService, JwtTokenService>();
@@ -64,24 +55,8 @@ public static class DependencyInjection
         services.AddHostedService<MqttIngestHostedService>();
         services.AddScoped<IDockerSystemClient, DockerSystemClient>();
 
-        services.AddScoped<TelemetrySeriesDapperQueryService>();
-        services.AddScoped<TelemetrySeriesQueryService>();
-        services.AddScoped<ITelemetrySeriesQuery>(sp =>
-        {
-            var options = sp.GetRequiredService<IOptions<DatabaseOptions>>().Value;
-            return options.UseDapperForTelemetrySeries
-                ? sp.GetRequiredService<TelemetrySeriesDapperQueryService>()
-                : sp.GetRequiredService<TelemetrySeriesQueryService>();
-        });
-        services.AddScoped<UiEventsEfQuery>();
-        services.AddScoped<UiEventsDapperQuery>();
-        services.AddScoped<IUiEventsQuery>(sp =>
-        {
-            var options = sp.GetRequiredService<IOptions<DatabaseOptions>>().Value;
-            return options.UseDapperForUiEventsQuery
-                ? sp.GetRequiredService<UiEventsDapperQuery>()
-                : sp.GetRequiredService<UiEventsEfQuery>();
-        });
+        services.AddScoped<ITelemetrySeriesQuery, TelemetrySeriesDapperQueryService>();
+        services.AddScoped<IUiEventsQuery, UiEventsDapperQuery>();
 
         return services;
     }
