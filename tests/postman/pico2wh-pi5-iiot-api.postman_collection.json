@@ -6,11 +6,26 @@
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "base_url", "value": "http://localhost:5163" },
-    { "key": "sample_device_id", "value": "pico_wh_1" },
-    { "key": "sample_site_id", "value": "site1" },
-    { "key": "access_token", "value": "" },
-    { "key": "refresh_token", "value": "" }
+    {
+      "key": "base_url",
+      "value": "http://localhost:5163"
+    },
+    {
+      "key": "sample_device_id",
+      "value": "pico2_wh_1"
+    },
+    {
+      "key": "sample_site_id",
+      "value": "default"
+    },
+    {
+      "key": "access_token",
+      "value": ""
+    },
+    {
+      "key": "refresh_token",
+      "value": ""
+    }
   ],
   "item": [
     {
@@ -46,11 +61,20 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"Test123!\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{base_url}}/api/v1/auth/login",
             "description": "Body 欄位：`username`、`password`（snake_case）。"
@@ -83,11 +107,20 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{base_url}}/api/v1/auth/refresh"
           },
@@ -97,11 +130,20 @@
           "name": "logout",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{base_url}}/api/v1/auth/logout"
           },
@@ -117,7 +159,12 @@
           "name": "list (GET)",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
             "url": "{{base_url}}/api/v1/telemetry?device_id={{sample_device_id}}&page=1&page_size=10",
             "description": "可選 query：`from`、`to`（ISO 8601）；省略時 Api 使用預設時間範圍。"
           },
@@ -127,7 +174,12 @@
           "name": "series (GET)",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
             "url": "{{base_url}}/api/v1/telemetry/series?device_id={{sample_device_id}}&from=2026-01-01T00:00:00Z&to=2026-01-02T00:00:00Z&metrics=temperature_c,lux",
             "description": "`from`/`to` 可為 ISO 字串或 Unix 毫秒。`metrics` 為逗號分隔白名單。可選 `max_points`。"
           },
@@ -143,7 +195,12 @@
           "name": "list (GET)",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
             "url": "{{base_url}}/api/v1/logs?page=1&page_size=10"
           },
           "response": []
@@ -158,7 +215,12 @@
           "name": "list (GET)",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
             "url": "{{base_url}}/api/v1/ui-events?device_id={{sample_device_id}}&site_id={{sample_site_id}}&page=1&page_size=10"
           },
           "response": []
@@ -190,7 +252,12 @@
           ],
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
             "url": "{{base_url}}/api/v1/system/status?include_stopped=true",
             "description": "回傳 `items`（snake_case 欄位如 `container_name`）。Docker 未啟用時仍可能 200 但內容為空。"
           },
@@ -207,14 +274,28 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{access_token}}" },
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "X-Request-Id", "value": "{{$guid}}", "disabled": true }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Request-Id",
+                "value": "{{$guid}}",
+                "disabled": true
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"device_id\": \"{{sample_device_id}}\",\n  \"command\": \"set_pwm\",\n  \"value\": 50,\n  \"site_id\": \"{{sample_site_id}}\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{base_url}}/api/v1/device/control",
             "description": "成功為 **202 Accepted**。`site_id` 可省略若 JWT 含 `tenant_scope`。"
