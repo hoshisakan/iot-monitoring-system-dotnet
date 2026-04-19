@@ -42,6 +42,7 @@ services:
             ConnectionStrings__Default: "Host=${DATABASE_HOST};Port=${POSTGRES_INSIDE_PORT};Database=${BACKEND_API_DATABASE_NAME};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
             # 對應 appsettings 之 Database:DefaultSchema（EF Core 表所屬 schema）
             Database__DefaultSchema: ${BACKEND_API_DATABASE_DEFAULT_SCHEMA:-dev}
+            Jwt__SigningKey: ${BACKEND_API_JWT_SIGNING_KEY}
             Mqtt__Host: ${BACKEND_API_MOSQUITTO_HOST_NAME}
             Mqtt__Port: ${MOSQUITTO_TLS_INSIDE_PORT}
             Mqtt__Username: ${MOSQUITTO_USERNAME}
