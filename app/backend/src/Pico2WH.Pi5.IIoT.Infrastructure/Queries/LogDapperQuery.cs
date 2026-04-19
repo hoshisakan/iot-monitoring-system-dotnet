@@ -6,17 +6,21 @@ using Pico2WH.Pi5.IIoT.Application.Common.Interfaces;
 using Pico2WH.Pi5.IIoT.Domain.Common;
 using Pico2WH.Pi5.IIoT.Domain.Entities;
 using Pico2WH.Pi5.IIoT.Domain.Repositories;
+using Pico2WH.Pi5.IIoT.Infrastructure.Persistence;
 
-namespace Pico2WH.Pi5.IIoT.Infrastructure.Persistence.Repositories;
+namespace Pico2WH.Pi5.IIoT.Infrastructure.Queries;
 
-public sealed class LogDapperQueryRepository : ILogQueryRepository
+/// <summary>
+/// 結構化日誌列表之 Dapper 讀取（與 <see cref="UiEventsDapperQuery"/>、<see cref="TelemetrySeriesDapperQuery"/> 同屬 <c>Queries/</c>）。
+/// </summary>
+public sealed class LogDapperQuery : ILogQueryRepository
 {
     private static readonly Regex SafeIdentifier = new("^[a-zA-Z_][a-zA-Z0-9_]*$", RegexOptions.Compiled);
 
     private readonly IDbConnectionFactory _connectionFactory;
     private readonly string _schema;
 
-    public LogDapperQueryRepository(IDbConnectionFactory connectionFactory, IOptions<DatabaseOptions> databaseOptions)
+    public LogDapperQuery(IDbConnectionFactory connectionFactory, IOptions<DatabaseOptions> databaseOptions)
     {
         _connectionFactory = connectionFactory;
         var schema = (databaseOptions.Value.DefaultSchema ?? "public").Trim();

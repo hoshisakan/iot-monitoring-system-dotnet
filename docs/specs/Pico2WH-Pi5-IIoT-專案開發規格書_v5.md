@@ -1763,8 +1763,8 @@ Pico 2 WH on breadboard
 
 - **Schema 與寫入**：資料表仍以 **EF Core Migration** 與 **`ApplicationDbContext`** 為單一結構來源；**MQTT ingest 落庫**、一般 **Command／Repository 寫入** 以 **EF Core** 為準。
 - **讀取查詢**：第二層僅依賴介面（如 `ILogQueryRepository`、`ITelemetrySeriesQuery`、`IUiEventsQuery`），與具體技術解耦；**HTTP 讀路徑**（日誌列表、UI 事件、遙測時序）實作均為 **Dapper**／**PostgreSQL** 參數化 SQL（**無** EF／Dapper 切換旗標）。
-  - 結構化日誌列表（`GET /api/v1/logs`）：`LogDapperQueryRepository`。
-  - 遙測時序（`GET /api/v1/telemetry/series`）：`TelemetrySeriesDapperQueryService`（SQL 側聚合）。
+  - 結構化日誌列表（`GET /api/v1/logs`）：`LogDapperQuery`。
+  - 遙測時序（`GET /api/v1/telemetry/series`）：`TelemetrySeriesDapperQuery`（SQL 側聚合）。
   - UI 事件列表（`GET /api/v1/ui-events`）：`UiEventsDapperQuery`。
 - **組態**（`Database`）：以 **`DefaultSchema`**、**`AutoMigrate`** 等為主（見 `DatabaseOptions`）。
 - **完整檔案位置、DI、連線與整合測試（DapperReadQueryTests）** 以 `Pico2WH-Pi5-IIoT-專案開發規格書_v5_ASPNETCORE_4LAYER.md` **§2.4.1a** 為後端 SoT。

@@ -44,7 +44,7 @@ public sealed class DapperReadQueryTests : IAsyncLifetime
         if (!await EnsureInitializedAsync())
             return;
 
-        var dapper = new LogDapperQueryRepository(_connectionFactory, _dbOptions);
+        var dapper = new LogDapperQuery(_connectionFactory, _dbOptions);
 
         var cases = new[]
         {
@@ -117,7 +117,7 @@ public sealed class DapperReadQueryTests : IAsyncLifetime
         if (!await EnsureInitializedAsync())
             return;
 
-        var dapper = new LogDapperQueryRepository(_connectionFactory, _dbOptions);
+        var dapper = new LogDapperQuery(_connectionFactory, _dbOptions);
         var payload = "' OR 1=1 --";
 
         var cases = new[]
@@ -158,7 +158,7 @@ public sealed class DapperReadQueryTests : IAsyncLifetime
         if (!await EnsureInitializedAsync())
             return;
 
-        var dapper = new TelemetrySeriesDapperQueryService(_connectionFactory, _dbOptions);
+        var dapper = new TelemetrySeriesDapperQuery(_connectionFactory, _dbOptions);
         var payload = "' OR 1=1 --";
         var fromUtc = new DateTime(2026, 4, 14, 9, 0, 0, DateTimeKind.Utc);
         var toUtc = new DateTime(2026, 4, 14, 11, 0, 0, DateTimeKind.Utc);
@@ -182,9 +182,9 @@ public sealed class DapperReadQueryTests : IAsyncLifetime
             DefaultSchema = "public; DROP SCHEMA public CASCADE; --"
         });
 
-        var logs = () => new LogDapperQueryRepository(_connectionFactory, unsafeOptions);
+        var logs = () => new LogDapperQuery(_connectionFactory, unsafeOptions);
         var uiEvents = () => new UiEventsDapperQuery(_connectionFactory, unsafeOptions);
-        var telemetry = () => new TelemetrySeriesDapperQueryService(_connectionFactory, unsafeOptions);
+        var telemetry = () => new TelemetrySeriesDapperQuery(_connectionFactory, unsafeOptions);
 
         logs.Should().Throw<InvalidOperationException>();
         uiEvents.Should().Throw<InvalidOperationException>();

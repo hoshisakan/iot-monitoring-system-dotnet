@@ -13,7 +13,7 @@ namespace Pico2WH.Pi5.IIoT.Infrastructure.Queries;
 /// 遙測時序：優先於 PostgreSQL 以 <c>date_bin</c> 分桶聚合，避免長區間全量載入記憶體。
 /// 對齊規格書 §6.0.4（<c>max_points</c>、metadata、時間桶 avg／<c>pir_active</c> 用 bool_or）。
 /// </summary>
-public sealed class TelemetrySeriesDapperQueryService : ITelemetrySeriesQuery
+public sealed class TelemetrySeriesDapperQuery : ITelemetrySeriesQuery
 {
     private static readonly Regex SafeIdentifier = new("^[a-zA-Z_][a-zA-Z0-9_]*$", RegexOptions.Compiled);
 
@@ -43,7 +43,7 @@ public sealed class TelemetrySeriesDapperQueryService : ITelemetrySeriesQuery
     private readonly IDbConnectionFactory _connectionFactory;
     private readonly string _schema;
 
-    public TelemetrySeriesDapperQueryService(
+    public TelemetrySeriesDapperQuery(
         IDbConnectionFactory connectionFactory,
         IOptions<DatabaseOptions> databaseOptions)
     {

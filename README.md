@@ -315,6 +315,6 @@ dotnet test Pico2WH.Pi5.IIoT.FourLayer.sln
 - **`conf/`**：**Nginx**、**MQTT Broker**、**PostgreSQL**／**PgAdmin** 等映像與設定檔。
 - **`scripts/setup/`**：**MQTT**／**Nginx** 憑證產生輔助腳本。
 - **`conf/cloudflared/README.md`**：**Cloudflare Tunnel**（與 `docker compose --profile cloudflare`、Nginx **真實 IP**、後端 **ForwardedHeaders** 對齊說明）。
-- **`tests/postman/`**：**API** **Postman** 集合（若已納入版本庫）。
+- **`tests/postman/`**：**API** **Postman** 集合
 
 ---

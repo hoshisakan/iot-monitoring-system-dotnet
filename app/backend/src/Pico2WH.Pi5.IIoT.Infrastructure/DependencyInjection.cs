@@ -42,7 +42,7 @@ public static class DependencyInjection
         services.AddScoped<ITelemetryRepository, TelemetryRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
-        services.AddScoped<ILogQueryRepository, LogDapperQueryRepository>();
+        services.AddScoped<ILogQueryRepository, LogDapperQuery>();
         services.AddScoped<IDeviceControlAuditRepository, DeviceControlAuditRepository>();
 
         services.AddSingleton<IJwtService, JwtTokenService>();
@@ -55,7 +55,7 @@ public static class DependencyInjection
         services.AddHostedService<MqttIngestHostedService>();
         services.AddScoped<IDockerSystemClient, DockerSystemClient>();
 
-        services.AddScoped<ITelemetrySeriesQuery, TelemetrySeriesDapperQueryService>();
+        services.AddScoped<ITelemetrySeriesQuery, TelemetrySeriesDapperQuery>();
         services.AddScoped<IUiEventsQuery, UiEventsDapperQuery>();
 
         return services;

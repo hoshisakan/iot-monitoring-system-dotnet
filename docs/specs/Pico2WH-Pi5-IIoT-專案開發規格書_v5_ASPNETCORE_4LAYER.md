@@ -146,7 +146,6 @@ app/backend/src/
 | `Persistence/Repositories/` | `TelemetryRepository.cs` | `ITelemetryRepository` 實作。 |
 | `Persistence/Repositories/` | `UserRepository.cs` | `IUserRepository` 實作。 |
 | `Persistence/Repositories/` | `RefreshTokenRepository.cs` | `IRefreshTokenRepository` 實作。 |
-| `Persistence/Repositories/` | `LogDapperQueryRepository.cs` | 若日誌來源為 DB 時之 `ILogQueryRepository` **Dapper** 實作。 |
 | `Persistence/Migrations/` | `<Timestamp>_InitialCreate.cs` 等 | EF 遷移產生檔（實際檔名含時間戳）。 |
 
 #### 2.4.1a 第三層內 · Dapper 讀取路徑（HTTP 讀取預設）
@@ -160,9 +159,9 @@ app/backend/src/
 | `DefaultSchema` | `public` | PostgreSQL schema；開發常為 `dev`。 |
 | `AutoMigrate` | `true` | 啟動時是否執行 `Migrate()`。 |
 
-- **結構化日誌**（`GET /api/v1/logs`）：`ILogQueryRepository` → **`LogDapperQueryRepository`**。
+- **結構化日誌**（`GET /api/v1/logs`）：`ILogQueryRepository` → **`LogDapperQuery`**。
 - **UI 事件列表**（`GET /api/v1/ui-events`）：`IUiEventsQuery` → **`UiEventsDapperQuery`**。
-- **遙測時序**（`GET /api/v1/telemetry/series`）：`ITelemetrySeriesQuery` → **`TelemetrySeriesDapperQueryService`**（PostgreSQL `date_bin` 等聚合於 SQL 完成）。
+- **遙測時序**（`GET /api/v1/telemetry/series`）：`ITelemetrySeriesQuery` → **`TelemetrySeriesDapperQuery`**（PostgreSQL `date_bin` 等聚合於 SQL 完成）。
 - **DI 註冊**（`Infrastructure/DependencyInjection.cs`）：上述介面皆**直接**綁定 Dapper 實作，無執行期切換。
 - **連線**：`IDbConnectionFactory` → `NpgsqlConnectionFactory`（與 `ConnectionStrings:Default` 同源），Dapper 查詢使用參數化 SQL；schema 取自 `Database:DefaultSchema`，實作會**拒絕**不安全之 schema 字元（與 EF 命名慣例一致時通常為 `public` 或 `dev`）。
 - **介面歸屬**：第二層仍只依賴 `ILogQueryRepository`、`ITelemetrySeriesQuery`、`IUiEventsQuery` 等**抽象**；第三層對 HTTP 讀路徑提供 **Dapper／SQL** 實作。
@@ -171,8 +170,8 @@ app/backend/src/
 |--------------------------------------|----------|------|
 | `Persistence/` | `DatabaseOptions.cs` | `Database` 組態（`DefaultSchema`、`AutoMigrate` 等）。 |
 | `Persistence/` | `NpgsqlConnectionFactory.cs`（或同等 `IDbConnectionFactory` 實作） | 提供開啟之 `NpgsqlConnection` 供 Dapper 使用。 |
-| `Persistence/Repositories/` | `LogDapperQueryRepository.cs` | `ILogQueryRepository` 之 Dapper 實作。 |
-| `Queries/` | `TelemetrySeriesDapperQueryService.cs` | `ITelemetrySeriesQuery` 之 Dapper 實作（遙測時序／降採樣讀取）。 |
+| `Queries/` | `LogDapperQuery.cs` | `ILogQueryRepository` 之 Dapper 實作（結構化日誌列表）。 |
+| `Queries/` | `TelemetrySeriesDapperQuery.cs` | `ITelemetrySeriesQuery` 之 Dapper 實作（遙測時序／降採樣讀取）。 |
 | `Queries/` | `UiEventsDapperQuery.cs` | `IUiEventsQuery` 之 Dapper 實作。 |
 
 **測試**：`tests/Pico2WH.Pi5.IIoT.Api.IntegrationTests` 內 `DapperReadQueryTests` 以 Testcontainers PostgreSQL 驗證 Dapper 讀路徑與參數化（正確性）；效能基準非本文件範圍。
@@ -195,7 +194,7 @@ app/backend/src/
 | `Mqtt/` | `MqttTelemetrySubscriber.cs` | 可選：背景訂閱遙測並寫入（若由後端訂閱）。 |
 | `Docker/` | `DockerSystemClient.cs` | `IDockerSystemClient` 實作（Docker.DotNet），供 `system/status`。 |
 | `Logging/` | `KvLogParser.cs` | 解析 `log_file_path` 之 KV 結構日誌。 |
-| `Logging/` | `FileLogQueryRepository.cs` | 若 `ILogQueryRepository` 改由檔案解析時之實作（與 `Persistence/Repositories/LogDapperQueryRepository` 擇一註冊）。 |
+| `Logging/` | `FileLogQueryRepository.cs` | 若 `ILogQueryRepository` 改由檔案解析時之實作（與 `Queries/LogDapperQuery` 擇一註冊）。 |
 
 **Ingest 分層備註（2026-04）**
 
