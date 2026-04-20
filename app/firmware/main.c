@@ -153,6 +153,12 @@ static uint32_t g_scd41_retry_count = 0;
 static scd41_sensor_data_t g_last_scd41 = {0};
 static bool g_pir_test_active = false;
 static uint32_t g_next_pir_test_heartbeat_ms = 0;
+static bool g_pir_candidate_active = false;
+static uint32_t g_pir_candidate_since_ms = 0;
+static uint32_t g_pir_next_true_allowed_ms = 0;
+static uint32_t g_pir_active_since_ms = 0;
+static uint32_t g_pir_inactive_since_ms = 0;
+static bool g_pir_rearmed = false;
 static float g_control_pwm = 0.0f;
 static bool g_control_alarm = false;
 static bool g_control_fan = false;
@@ -774,6 +780,12 @@ static void pir_test_init(void) {
 #endif
     bool raw = gpio_get(PIR_TEST_GPIO);
     g_pir_test_active = PIR_TEST_ACTIVE_HIGH ? raw : !raw;
+    g_pir_candidate_active = g_pir_test_active;
+    g_pir_candidate_since_ms = 0;
+    g_pir_next_true_allowed_ms = 0;
+    g_pir_active_since_ms = 0;
+    g_pir_inactive_since_ms = 0;
+    g_pir_rearmed = !g_pir_test_active;
     printf("[PIR] test init: gpio=GP%d pull_up=%d active_high=%d raw=%d initial_active=%s\n", PIR_TEST_GPIO,
            PIR_TEST_PULL_UP ? 1 : 0, PIR_TEST_ACTIVE_HIGH, raw ? 1 : 0, g_pir_test_active ? "true" : "false");
 }
@@ -781,9 +793,52 @@ static void pir_test_init(void) {
 static void pir_test_poll(uint32_t now_ms) {
     bool raw = gpio_get(PIR_TEST_GPIO);
     bool active = PIR_TEST_ACTIVE_HIGH ? raw : !raw;
-    if (active != g_pir_test_active) {
-        g_pir_test_active = active;
+    if (!active) {
+        if (g_pir_inactive_since_ms == 0) {
+            g_pir_inactive_since_ms = now_ms;
+        }
+        if (!g_pir_rearmed && (uint32_t)(now_ms - g_pir_inactive_since_ms) >= PIR_REARM_LOW_MS) {
+            g_pir_rearmed = true;
+        }
+    } else {
+        g_pir_inactive_since_ms = 0;
+    }
+    if (active != g_pir_candidate_active) {
+        g_pir_candidate_active = active;
+        g_pir_candidate_since_ms = now_ms;
+    }
+    uint32_t stable_ms = g_pir_candidate_active ? PIR_TRUE_STABLE_MS : PIR_FALSE_STABLE_MS;
+    if (g_pir_candidate_active != g_pir_test_active &&
+        (uint32_t)(now_ms - g_pir_candidate_since_ms) >= stable_ms) {
+        if (g_pir_candidate_active && (int32_t)(now_ms - g_pir_next_true_allowed_ms) < 0) {
+            /* During cooldown, require another stable true window before accepting. */
+            g_pir_candidate_since_ms = now_ms;
+            return;
+        }
+        if (g_pir_candidate_active && !g_pir_rearmed) {
+            /* Ignore retrigger until input has been inactive long enough to rearm. */
+            g_pir_candidate_since_ms = now_ms;
+            return;
+        }
+        g_pir_test_active = g_pir_candidate_active;
+        if (g_pir_test_active) {
+            g_pir_next_true_allowed_ms = now_ms + PIR_TRUE_COOLDOWN_MS;
+            g_pir_active_since_ms = now_ms;
+            g_pir_rearmed = false;
+        } else {
+            g_pir_active_since_ms = 0;
+        }
         printf("[PIR] state changed: active=%s raw=%d\n", g_pir_test_active ? "true" : "false", raw ? 1 : 0);
+        g_next_pir_test_heartbeat_ms = now_ms + 5000U;
+        return;
+    }
+    if (g_pir_test_active && g_pir_active_since_ms != 0 &&
+        (uint32_t)(now_ms - g_pir_active_since_ms) >= PIR_TRUE_MAX_HOLD_MS) {
+        g_pir_test_active = false;
+        g_pir_candidate_active = false;
+        g_pir_candidate_since_ms = now_ms;
+        g_pir_active_since_ms = 0;
+        printf("[PIR] auto-clear active after hold timeout (raw=%d)\n", raw ? 1 : 0);
         g_next_pir_test_heartbeat_ms = now_ms + 5000U;
         return;
     }

@@ -1,15 +1,15 @@
 #ifndef _SECRETS_H
 #define _SECRETS_H
 
-#define WIFI_SSID "hoshiyou"
-#define WIFI_PASSWORD "Asahi302496"
+#define WIFI_SSID "YOUR_SSID_HERE"
+#define WIFI_PASSWORD "YOUR_PASSWORD_HERE"
 
 /*
     * MQTT 相關設定
     * broker IP、port、帳密等；建議使用安全連線（TLS/SSL）且 broker 需有適當的存取控制機制。
     * 若 broker 不在本地網路，請確保裝置能正確連上 Internet 且 broker 的防火牆／安全群組允許來自裝置的連線。
 */
-#define MQTT_BROKER_IP "172.20.10.3"
+#define MQTT_BROKER_IP "YOUR_MQTT_BROKER_IP"
 #define MQTT_BROKER_PORT 8883
 
 /*
@@ -38,7 +38,10 @@
 #define RTC_TRUSTED_MIN_YEAR 26
 
 /* 遙測上報間隔（毫秒；主迴圈非阻塞排程） */
+/* 為了採集 60 萬筆測試資料而設置 */
 #define ENV_REPORT_INTERVAL_MS 1000U
+/* 為了平常運行而設置 */
+// #define ENV_REPORT_INTERVAL_MS 10000U
 
 /* IMU 取樣間隔（毫秒；主迴圈非阻塞） */
 #define IMU_SAMPLING_INTERVAL_MS 100U
@@ -108,6 +111,23 @@
 #define ENABLE_PAJ7620_DEBUG_LOG 0
 /* bring-up 進階：只要 g43/g44 非 0 即發 raw ui-event（繞過 mapping/debounce） */
 #define ENABLE_PAJ7620_RAW_UI_EVENT_DEBUG 0
+/* 選填：Grove Mini PIR（SIG/REL -> GP6）：多數模組需上拉；若仍全 raw=0 可試 PIR_TEST_ACTIVE_HIGH 0 */
+#define PIR_TEST_GPIO 6
+#define PIR_TEST_PULL_UP 1
+#define PIR_TEST_ACTIVE_HIGH 1
+/*
+ * PIR 參數說明（單位：毫秒）
+ * - PIR_TRUE_STABLE_MS：由 false -> true 前，需連續維持 true 的時間（越大越不敏感）。
+ * - PIR_FALSE_STABLE_MS：由 true -> false 前，需連續維持 false 的時間（越小越快回復）。
+ * - PIR_TRUE_COOLDOWN_MS：一次 true 事件後的冷卻期，期間不接受下一次 true。
+ * - PIR_REARM_LOW_MS：必須先連續 low 多久才「重新武裝」下一次 true 觸發。
+ * - PIR_TRUE_MAX_HOLD_MS：true 最長持續上限；超過會自動清為 false（防 stuck-high）。
+ */
+#define PIR_TRUE_STABLE_MS 2000U
+#define PIR_FALSE_STABLE_MS 500U
+#define PIR_TRUE_COOLDOWN_MS 8000U
+#define PIR_REARM_LOW_MS 3000U
+#define PIR_TRUE_MAX_HOLD_MS 4000U
 /* 掃描結束後暫停多久再初始化感測器（毫秒），方便閱讀 I2C scan log；僅 ENABLE_I2C_BOOT_SCAN 為 1 時有效；0=不延遲；未設定時見 firmware_config_defaults.h（3000） */
 #define I2C_BOOT_SCAN_HOLD_MS 5000U
 

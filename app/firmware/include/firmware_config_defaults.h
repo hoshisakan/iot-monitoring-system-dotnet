@@ -76,6 +76,26 @@
 #ifndef PIR_TEST_PULL_UP
 #define PIR_TEST_PULL_UP 1
 #endif
+/* Rising-edge (inactive->active) stable window in milliseconds. */
+#ifndef PIR_TRUE_STABLE_MS
+#define PIR_TRUE_STABLE_MS 2000U
+#endif
+/* Falling-edge (active->inactive) stable window in milliseconds. */
+#ifndef PIR_FALSE_STABLE_MS
+#define PIR_FALSE_STABLE_MS 500U
+#endif
+/* Minimum interval between accepted active=true transitions. */
+#ifndef PIR_TRUE_COOLDOWN_MS
+#define PIR_TRUE_COOLDOWN_MS 8000U
+#endif
+/* Required continuous inactive duration before re-arming a next true event. */
+#ifndef PIR_REARM_LOW_MS
+#define PIR_REARM_LOW_MS 3000U
+#endif
+/* Safety cap: auto-clear active after this duration even if raw stays active. */
+#ifndef PIR_TRUE_MAX_HOLD_MS
+#define PIR_TRUE_MAX_HOLD_MS 4000U
+#endif
 
 /*
  * Offline telemetry FIFO in AT24C256: number of fixed-size slots (see telemetry_eeprom_queue.c).
