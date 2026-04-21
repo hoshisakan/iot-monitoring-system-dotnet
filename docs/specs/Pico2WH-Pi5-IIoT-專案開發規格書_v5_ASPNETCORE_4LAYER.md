@@ -1,4 +1,6 @@
-# 🚀 Pico 2 WH & Pi 5 IIoT 專案開發規格書 v5（ASP.NET Core 版 · **四層架構**）
+# 🚀 Pico 2 WH & Pi 5 IIoT 專案開發規格書 v5.1（ASP.NET Core 版 · **四層架構**）
+
+> **2026-04-22 修正**：根據 Dapper 讀寫分離實作現狀同步化文件結構。
 
 > 本文件**只**描述後端 **Clean Architecture 四層**：**第一層 領域（Domain）**、**第二層 應用（Application）**、**第三層 基礎設施（Infrastructure）**、**第四層 表現／介面（Api）**。  
 > 實作上 **每一層一個組件專案**（Domain、Application、Infrastructure、Api）；**不**定義第五、第六架構層。  
@@ -8,7 +10,8 @@
 > **SoT 聲明（Backend）**：凡後端分層、依賴方向、套件、API 實作約束，以本文件為準。  
 > **文件分工**：`Pico2WH-Pi5-IIoT-專案開發規格書_v5.md` 為全專案總規格（硬體/韌體/部署/階段）；本文件為後端實作細則。  
 > **Legacy 聲明**：舊版 `Ulfius` 敘事僅作歷史參考，現行主線為 ASP.NET Core 四層架構。  
-> **補充（2026-04-18）**：讀取查詢可選 **Dapper**（與 EF Core 並存、組態切換），見 **§2.4.1a**；總規格對應 **§6.0.5 A.0**。
+> **補充（2026-04-18）**：讀取查詢可選 **Dapper**（與 EF Core 並存、組態切換），見 **§2.4.1a**；總規格對應 **§6.0.5 A.0**。  
+> **補充（2026-04-22）**：`ITelemetryRepository` 已轉型為**純讀取介面**；遙測寫入職責轉移至 `Application/Ingest` + `Persistence/Repositories/*IngestRepository`（EF Core）。
 
 **依賴方向（由外而內）**：第四層 `Api` → 第二層 `Application`、第三層 `Infrastructure`；第二層 → 第一層 `Domain`；第三層 → 第二層、第一層。第一層**不**依賴 EF／HTTP／MQTT／Docker SDK。
 
@@ -34,7 +37,7 @@
 
 > 專案前綴命名空間：`Pico2WH.Pi5.IIoT`。
 
-> **根目錄**：`app/backend/src`。所有後端原始碼、Solution、測試與腳本**統一**置於此目錄下；`.sln` 與四個專案資料夾**直接**在此層，**不再**多一層 `src` 子資料夾（避免 `app/backend/src/src`）。
+> **後端根目錄**：`app/backend`。其中 `src/` 放置 Solution 與四層專案、`sql/` 放置維運 SQL、`scripts/` 放置後端腳本。
 
 ### 2.0 六角架構（Ports & Adapters）與四層對應
 
@@ -47,36 +50,42 @@
 
 依賴方向維持 **由外而內**：第四層 → 第二層 → 第一層；第三層實作第二／第一層所定義的介面，**不**讓第一層依賴框架。
 
-### 2.1 總覽樹狀圖（`app/backend/src`）
+### 2.1 總覽樹狀圖（`app/backend/`）
 
 ```text
-app/backend/src/
-├── Pico2WH.Pi5.IIoT.Clean.sln          # 或 Pico2WH.Pi5.IIoT.FourLayer.sln
-├── README.md
-├── Pico2WH.Pi5.IIoT.Api/
-├── Pico2WH.Pi5.IIoT.Application/
-├── Pico2WH.Pi5.IIoT.Domain/
-├── Pico2WH.Pi5.IIoT.Infrastructure/
-│   ├── Persistence/
-│   │   ├── Context/
-│   │   ├── Configurations/
-│   │   ├── Repositories/
-│   │   └── Migrations/
-│   ├── Queries/                        # 讀取查詢（含 Dapper 時序查詢實作等）
-│   ├── Identity/
-│   │   ├── Jwt/
-│   │   └── Security/
-│   ├── Mqtt/
-│   ├── Docker/
-│   └── Logging/
-├── tests/
-│   ├── Pico2WH.Pi5.IIoT.Domain.Tests/
-│   ├── Pico2WH.Pi5.IIoT.Application.Tests/
-│   ├── Pico2WH.Pi5.IIoT.Api.IntegrationTests/
-│   └── Pico2WH.Pi5.IIoT.Api.ContractTests/    # 可選：API 契約
+app/backend/
+├── sql/
+│   ├── v_02_advanced_analytics_and_forecasting.sql
+│   ├── v_system_performance_hourly.sql
+│   ├── v_daily_completeness.sql
+│   ├── v_ingest_health_monitor.sql
+│   ├── v_storage_analysis.sql
+│   └── v_storage_total.sql
+├── src/
+│   ├── Pico2WH.Pi5.IIoT.FourLayer.sln
+│   ├── Pico2WH.Pi5.IIoT.Api/
+│   ├── Pico2WH.Pi5.IIoT.Application/
+│   ├── Pico2WH.Pi5.IIoT.Domain/
+│   ├── Pico2WH.Pi5.IIoT.Infrastructure/
+│   │   ├── Persistence/
+│   │   │   ├── Context/
+│   │   │   ├── Configurations/
+│   │   │   ├── Repositories/
+│   │   │   └── Migrations/
+│   │   ├── Queries/                        # LogDapperQuery / UiEventsDapperQuery / TelemetrySeriesDapperQuery
+│   │   ├── Identity/
+│   │   │   ├── Jwt/
+│   │   │   └── Security/
+│   │   ├── Mqtt/
+│   │   ├── Docker/
+│   │   └── Logging/
+│   └── tests/
+│       ├── Pico2WH.Pi5.IIoT.Domain.Tests/
+│       ├── Pico2WH.Pi5.IIoT.Application.Tests/
+│       ├── Pico2WH.Pi5.IIoT.Api.IntegrationTests/
+│       └── Pico2WH.Pi5.IIoT.Api.ContractTests/
 └── scripts/
-    ├── wsl/
-    └── pi5/
+    └── (後端相關腳本路徑，例：wsl/pi5)
 ```
 
 以下各節列出**各目錄**內建議檔名與職責（實作時可依需求增刪，但分層與命名應維持一致）。**路徑**中 `Infrastructure/` 以下子資料夾相對於 `Pico2WH.Pi5.IIoT.Infrastructure` 專案根。
@@ -86,7 +95,7 @@ app/backend/src/
 | 路徑（相對於專案根） | 檔案名稱 | 作用 |
 |----------------------|----------|------|
 | `./` | `Pico2WH.Pi5.IIoT.Domain.csproj` | 類別庫專案檔；**不**參考 EF／HTTP／MQTT 等。 |
-| `Common/` | `BaseEntity.cs` | 共用主鍵、建立／修改時間等基底欄位。 |
+| `Common/` | `EntityBase.cs` | 共用主鍵、建立／修改時間等基底欄位。 |
 | `Common/` | `DomainException.cs` | 領域層可預期錯誤例外。 |
 | `Entities/` | `Device.cs` | 裝置聚合根或實體。 |
 | `Entities/` | `TelemetryReading.cs` | 遙測資料實體（對齊 `co2_ppm`、`temperature_c_scd41` 等欄位語意）。 |
@@ -94,7 +103,7 @@ app/backend/src/
 | `Entities/` | `RefreshToken.cs` | Refresh Token 儲存實體。 |
 | `Entities/` | `DeviceControlAudit.cs` | 裝置控制審計紀錄。 |
 | `ValueObjects/` | `DeviceId.cs` | 裝置識別值物件（避免裸 `string`/`Guid` 散落）。 |
-| `Repositories/` | `ITelemetryRepository.cs` | 遙測讀寫之儲存庫**介面**（埠）。 |
+| `Repositories/` | `ITelemetryRepository.cs` | 遙測查詢之儲存庫**介面**（讀取埠）。 |
 | `Repositories/` | `IUserRepository.cs` | 使用者／憑證相關持久化介面。 |
 | `Repositories/` | `ILogQueryRepository.cs` | 日誌／KV 查詢抽象（實作於第三層 `Persistence/` 或 `Logging/`，擇一）。 |
 | `Repositories/` | `IRefreshTokenRepository.cs` | Refresh Token 儲存介面。 |
@@ -148,11 +157,14 @@ app/backend/src/
 | `Persistence/Repositories/` | `RefreshTokenRepository.cs` | `IRefreshTokenRepository` 實作。 |
 | `Persistence/Migrations/` | `<Timestamp>_InitialCreate.cs` 等 | EF 遷移產生檔（實際檔名含時間戳）。 |
 
-#### 2.4.1a 第三層內 · Dapper 讀取路徑（HTTP 讀取預設）
+#### 2.4.1a 第三層內 · Dapper 讀取路徑（HTTP 讀取預設，讀寫分離）
 
 > **範圍**：僅**讀取查詢**；**寫入**（含 MQTT ingest 落庫）、**EF Migration**、**DbContext** 仍以 **EF Core** 為主。  
 > **套件**：`Dapper`（與 `Npgsql` 經 `IDbConnectionFactory` 建立連線）。  
 > **組態**：`DatabaseOptions`（`appsettings` 節點 `Database`）以 **`DefaultSchema`**、**`AutoMigrate`** 為主；**無**「EF／Dapper 切換」旗標。
+
+> **架構演進同步（2026-04-22）**：`ITelemetryRepository` 已轉型為純讀取介面；高效讀取路徑由 Dapper Query 類別承擔（如 `TelemetrySeriesDapperQuery`、`LogDapperQuery`、`UiEventsDapperQuery`）。  
+> 遙測寫入責任轉移至第二層 `Application/Ingest` 用例，並由第三層 `Persistence/Repositories/*IngestRepository` 以 EF Core 實作落庫。
 
 | 設定鍵 | 預設 | 說明 |
 |--------|------|------|
@@ -165,6 +177,7 @@ app/backend/src/
 - **DI 註冊**（`Infrastructure/DependencyInjection.cs`）：上述介面皆**直接**綁定 Dapper 實作，無執行期切換。
 - **連線**：`IDbConnectionFactory` → `NpgsqlConnectionFactory`（與 `ConnectionStrings:Default` 同源），Dapper 查詢使用參數化 SQL；schema 取自 `Database:DefaultSchema`，實作會**拒絕**不安全之 schema 字元（與 EF 命名慣例一致時通常為 `public` 或 `dev`）。
 - **介面歸屬**：第二層仍只依賴 `ILogQueryRepository`、`ITelemetrySeriesQuery`、`IUiEventsQuery` 等**抽象**；第三層對 HTTP 讀路徑提供 **Dapper／SQL** 實作。
+- **寫入歸屬**：`ITelemetryIngestRepository` / `IUiEventIngestRepository` / `IStatusLogIngestRepository` 由 `TelemetryIngestRepository` / `UiEventIngestRepository` / `StatusLogIngestRepository` 以 EF Core 實作。
 
 | 路徑（相對於 Infrastructure 專案根） | 檔案名稱 | 作用 |
 |--------------------------------------|----------|------|
@@ -231,12 +244,12 @@ app/backend/src/
 | `Pico2WH.Pi5.IIoT.Api.IntegrationTests/` | `WebApplicationFactory`、`*EndpointTests.cs` | 端到端／整合測試（`Microsoft.AspNetCore.Mvc.Testing`、Testcontainers）。 |
 | `Pico2WH.Pi5.IIoT.Api.ContractTests/` | 可選 | OpenAPI 契約或消費者驅動測試。 |
 
-### 2.7 `scripts`（同層於 `app/backend/src`）
+### 2.7 `scripts`（同層於 `app/backend`）
 
 | 路徑 | 作用 |
 |------|------|
-| `scripts/wsl/` | WSL 開發環境輔助腳本（還原、測試、遷移包裝）。 |
-| `scripts/pi5/` | Pi 5 部署、systemd、compose 輔助腳本。 |
+| `app/backend/scripts/wsl/` | WSL 開發環境輔助腳本（還原、測試、遷移包裝）。 |
+| `app/backend/scripts/pi5/` | Pi 5 部署、systemd、compose 輔助腳本。 |
 
 ### 2.8 四層依賴與專案參考（摘要）
 
@@ -255,7 +268,7 @@ app/backend/src/
 
 | 順序 | 層級/區域 | 先建立檔案 | 作用（為何先做） |
 |------|-----------|------------|------------------|
-| 1 | `Domain` | `Common/BaseEntity.cs`、`Common/DomainException.cs` | 建立領域共用基底與錯誤語意。 |
+| 1 | `Domain` | `Common/EntityBase.cs`、`Common/DomainException.cs` | 建立領域共用基底與錯誤語意。 |
 | 2 | `Domain` | `Entities/*`、`ValueObjects/DeviceId.cs` | 核心模型與不變條件。 |
 | 3 | `Domain` | `Repositories/*.cs`（介面） | 宣告埠；Application 可不依賴實作。 |
 | 4 | `Application` | `Common/Interfaces/*`、`PagedResult.cs` | 定義 JWT/MQTT/Docker 等契約。 |
@@ -616,10 +629,10 @@ CREATE INDEX IF NOT EXISTS ix_app_logs_device_time
 #### D. 一次建立 dev / prod 的指令範本（cmd / WSL / Pi5）
 
 ```bash
-# 1) 將 DDL 存成檔案，例如 app/backend/src/scripts/sql/init_schema.sql
+# 1) 將 DDL 存成檔案，例如 app/backend/scripts/sql/init_schema.sql
 
 # 2) 以 psql 執行（cmd / WSL / Pi5 相同）
-psql "<PostgresConnectionString>" -v ON_ERROR_STOP=1 -f app/backend/src/scripts/sql/init_schema.sql
+psql "<PostgresConnectionString>" -v ON_ERROR_STOP=1 -f app/backend/scripts/sql/init_schema.sql
 ```
 
 #### E. 與 EF Core Migration 的關係

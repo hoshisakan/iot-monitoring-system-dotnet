@@ -1,7 +1,8 @@
-# 🚀 Pico 2 WH & Pi 5 IIoT 專案開發規格書 v5
+# 🚀 Pico 2 WH & Pi 5 IIoT 專案開發規格書 v5.1
 
-> 更新日期：**2026-04-05**  
-> 補充（2026-04-18）：**§6.0.5 A.0** 後端讀取路徑 **EF Core／Dapper** 與 `Database` 組態；細節見 `Pico2WH-Pi5-IIoT-專案開發規格書_v5_ASPNETCORE_4LAYER.md` **§2.4.1a**。  
+> 更新日期：**2026-04-22**  
+> 修正（2026-04-22）：後端 SoT 同步至 **v5.1**（Dapper 讀寫分離術語、SoT 連結版本、後端命名一致化）。  
+> 補充（2026-04-18）：**§6.0.5 A.0** 後端讀取路徑 **EF Core／Dapper** 與 `Database` 組態；細節見 `Pico2WH-Pi5-IIoT-專案開發規格書_v5_ASPNETCORE_4LAYER.md`（**v5.1**）**§2.4.1a**。  
 > 修訂：新增 **§6.0.5 技術策略深度擬定**（Database Strategy、Auth Policy、Fault Tolerance）；新增 **§6.0.4 技術規格增補（SoT）**：REST API 深度規範、Clean Architecture 分層契約、MQTT payload 與錯誤處理、Pico I2C 衝突掃描與 AT24C256 Ring Buffer 策略；更新 **§6.0.3** API 實作細節（`GET /api/v1/logs` 結構化檔案解析與 `channel/level` 篩選、`GET /api/v1/telemetry/series` 降採樣與 metrics 驗證、新增 `GET /api/v1/system/status`、`POST /api/v1/device/control`）；新增 **§6.0.3**（Markdown 模擬 Swagger UI API 端點說明，對齊 **§2.4.2** MQTT 鍵與 **§6.0** 功能）；**§6.0A** 後端 Logging 架構補強（**Key-Value 格式**、**10MB 輪替/覆蓋**、**JWT 驗證失敗審計：來源 IP + 錯誤類型**）；`config.json` 可控 `log_file_path`、啟動自動建目錄、Console+檔案雙寫、MQTT `on_message_received` 記錄 `device_id/topic/payload`；**§2.4.2** **SCD41／PIR** 與 **§6.0** 之 **MQTT Topic／JSON 鍵／DB** 單一契約；**§6.1** **`iot/2026-04-05 012821.png`** 新硬體之**階段目標、驗收、接線對照**；**§6.0**／**§6.2** 階段清單 **SCD41／Mini PIR 韌體與前後端**（與 **§2.4.1**、硬體計畫 **§4.0／🟢階段一** 對齊）；**§2.3～§2.4.1** **`iot/2026-04-05 012821.png`**：**SCD41**、**Grove Mini PIR**、**Grove→DuPont 公頭線 20 cm**；**§2.3** **ProsKit BX-4112N×2、8PK-AS07-1（已購買）**；**§5.1～§5.2** 單板／雙麵包板並接接線圖；**§1** 補充並行節奏與 **Clean Architecture**；**§2.1B** 前後端層級；**§2.1A** **Nginx**；**§2.6** **LCD1602×2（Pico／Pi 5）**、**KY-016（已購買）** 接線；**§6.0** **Nginx／JWT** 與 **後端／前端（Clean Architecture）** 標註；**§6.0.1** **遙測圖表（前後端設計步驟）**；**§6.0.2** 第四階段為生產調優；MQTT 細節見 `Stage1-Stage3_Implementation_Roadmap_with_MQTT_Topic_Standard.md`。  
 > 基礎版本：`Pico2WH-Pi5-IIoT-專案開發規格書_v4.md`  
 > 環境：**開發端（WSL2 Ubuntu 22.04+）/ 生產端（Pi 5 64-bit）**
@@ -11,10 +12,10 @@
 ## 文件定位與 SoT（必讀）
 
 - 本文件（`v5.md`）是**全專案總規格**（硬體、韌體、前後端、部署與階段計畫）。
-- 後端實作細節（分層、專案結構、套件、API 實作約束）以 `Pico2WH-Pi5-IIoT-專案開發規格書_v5_ASPNETCORE_4LAYER.md` 為**後端 SoT**。
+- 後端實作細節（分層、專案結構、套件、API 實作約束）以 `Pico2WH-Pi5-IIoT-專案開發規格書_v5_ASPNETCORE_4LAYER.md`（**v5.1**）為**後端 SoT**。
 - 若兩份文件對後端技術描述不一致，以 **ASP.NET Core 四層文件**為準。
 - `Ulfius` 在本文件中視為 **Legacy 歷史方案**註記；現行後端主線為 **ASP.NET Core (.NET 8) 四層架構**。
-- MQTT ingest 分層以後端 SoT 為準：`topic` 路由在 `Infrastructure`，三條 ingest 用例（telemetry/ui-events/status）在 `Application`，落庫由 `Infrastructure/Persistence` repository 實作。
+- MQTT ingest 分層以後端 SoT 為準：`topic` 路由在 `Infrastructure`，三條 ingest 用例（telemetry/ui-events/status）在 `Application`，寫入由 `Infrastructure/Persistence/Repositories/*IngestRepository`（EF Core）實作，讀取查詢由 Dapper Query 路徑負責。
 
 ---
 
@@ -1761,13 +1762,13 @@ Pico 2 WH on breadboard
 
 ##### A.0 讀取路徑：EF Core 與 Dapper（後端實作）
 
-- **Schema 與寫入**：資料表仍以 **EF Core Migration** 與 **`ApplicationDbContext`** 為單一結構來源；**MQTT ingest 落庫**、一般 **Command／Repository 寫入** 以 **EF Core** 為準。
+- **Schema 與寫入**：資料表仍以 **EF Core Migration** 與 **`ApplicationDbContext`** 為單一結構來源；**MQTT ingest 寫入**與一般 Command 寫入由 **IngestRepository（EF Core）** 負責。
 - **讀取查詢**：第二層僅依賴介面（如 `ILogQueryRepository`、`ITelemetrySeriesQuery`、`IUiEventsQuery`），與具體技術解耦；**HTTP 讀路徑**（日誌列表、UI 事件、遙測時序）實作均為 **Dapper**／**PostgreSQL** 參數化 SQL（**無** EF／Dapper 切換旗標）。
   - 結構化日誌列表（`GET /api/v1/logs`）：`LogDapperQuery`。
   - 遙測時序（`GET /api/v1/telemetry/series`）：`TelemetrySeriesDapperQuery`（SQL 側聚合）。
   - UI 事件列表（`GET /api/v1/ui-events`）：`UiEventsDapperQuery`。
 - **組態**（`Database`）：以 **`DefaultSchema`**、**`AutoMigrate`** 等為主（見 `DatabaseOptions`）。
-- **完整檔案位置、DI、連線與整合測試（DapperReadQueryTests）** 以 `Pico2WH-Pi5-IIoT-專案開發規格書_v5_ASPNETCORE_4LAYER.md` **§2.4.1a** 為後端 SoT。
+- **完整檔案位置、DI、連線與整合測試（DapperReadQueryTests）** 以 `Pico2WH-Pi5-IIoT-專案開發規格書_v5_ASPNETCORE_4LAYER.md`（**v5.1**）**§2.4.1a** 為後端 SoT。
 
 ##### A.1 PostgreSQL 資料表設計（Telemetry 主表）
 
