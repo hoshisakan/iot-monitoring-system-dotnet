@@ -2,16 +2,17 @@
 
 > 更新日期：**2026-04-22**  
 > 修正（2026-04-22）：後端 SoT 同步至 **v5.1**（Dapper 讀寫分離術語、SoT 連結版本、後端命名一致化）。  
+> 2026-04-22 修正：移除本地圖片路徑與幽靈標籤，同步為 GitHub 純文字竣工文檔。  
 > 補充（2026-04-18）：**§6.0.5 A.0** 後端讀取路徑 **EF Core／Dapper** 與 `Database` 組態；細節見 `Pico2WH-Pi5-IIoT-專案開發規格書_v5_ASPNETCORE_4LAYER.md`（**v5.1**）**§2.4.1a**。  
-> 修訂：新增 **§6.0.5 技術策略深度擬定**（Database Strategy、Auth Policy、Fault Tolerance）；新增 **§6.0.4 技術規格增補（SoT）**：REST API 深度規範、Clean Architecture 分層契約、MQTT payload 與錯誤處理、Pico I2C 衝突掃描與 AT24C256 Ring Buffer 策略；更新 **§6.0.3** API 實作細節（`GET /api/v1/logs` 結構化檔案解析與 `channel/level` 篩選、`GET /api/v1/telemetry/series` 降採樣與 metrics 驗證、新增 `GET /api/v1/system/status`、`POST /api/v1/device/control`）；新增 **§6.0.3**（Markdown 模擬 Swagger UI API 端點說明，對齊 **§2.4.2** MQTT 鍵與 **§6.0** 功能）；**§6.0A** 後端 Logging 架構補強（**Key-Value 格式**、**10MB 輪替/覆蓋**、**JWT 驗證失敗審計：來源 IP + 錯誤類型**）；`config.json` 可控 `log_file_path`、啟動自動建目錄、Console+檔案雙寫、MQTT `on_message_received` 記錄 `device_id/topic/payload`；**§2.4.2** **SCD41／PIR** 與 **§6.0** 之 **MQTT Topic／JSON 鍵／DB** 單一契約；**§6.1** **`iot/2026-04-05 012821.png`** 新硬體之**階段目標、驗收、接線對照**；**§6.0**／**§6.2** 階段清單 **SCD41／Mini PIR 韌體與前後端**（與 **§2.4.1**、硬體計畫 **§4.0／🟢階段一** 對齊）；**§2.3～§2.4.1** **`iot/2026-04-05 012821.png`**：**SCD41**、**Grove Mini PIR**、**Grove→DuPont 公頭線 20 cm**；**§2.3** **ProsKit BX-4112N×2、8PK-AS07-1（已購買）**；**§5.1～§5.2** 單板／雙麵包板並接接線圖；**§1** 補充並行節奏與 **Clean Architecture**；**§2.1B** 前後端層級；**§2.1A** **Nginx**；**§2.6** **LCD1602×2（Pico／Pi 5）**、**KY-016（已購買）** 接線；**§6.0** **Nginx／JWT** 與 **後端／前端（Clean Architecture）** 標註；**§6.0.1** **遙測圖表（前後端設計步驟）**；**§6.0.2** 第四階段為生產調優；MQTT 細節見 `Stage1-Stage3_Implementation_Roadmap_with_MQTT_Topic_Standard.md`。  
-> 基礎版本：`Pico2WH-Pi5-IIoT-專案開發規格書_v4.md`  
+> 修訂：新增 **§6.0.5 技術策略深度擬定**（Database Strategy、Auth Policy、Fault Tolerance）；新增 **§6.0.4 技術規格增補（SoT）**：REST API 深度規範、Clean Architecture 分層契約、MQTT payload 與錯誤處理、Pico I2C 衝突掃描與 AT24C256 Ring Buffer 策略；更新 **§6.0.3** API 實作細節（`GET /api/v1/logs` 結構化檔案解析與 `channel/level` 篩選、`GET /api/v1/telemetry/series` 降採樣與 metrics 驗證、新增 `GET /api/v1/system/status`、`POST /api/v1/device/control`）；新增 **§6.0.3**（Markdown 模擬 Swagger UI API 端點說明，對齊 **§2.4.2** MQTT 鍵與 **§6.0** 功能）；**§6.0A** 後端 Logging 架構補強（**Key-Value 格式**、**10MB 輪替/覆蓋**、**JWT 驗證失敗審計：來源 IP + 錯誤類型**）；`config.json` 可控 `log_file_path`、啟動自動建目錄、Console+檔案雙寫、MQTT `on_message_received` 記錄 `device_id/topic/payload`；**§2.4.2** **SCD41／PIR** 與 **§6.0** 之 **MQTT Topic／JSON 鍵／DB** 單一契約；**§6.1** 新硬體（SCD41、Grove Mini PIR、Grove→DuPont 公頭線）之**階段目標、驗收、接線對照**；**§6.0**／**§6.2** 階段清單 **SCD41／Mini PIR 韌體與前後端**（與 **§2.4.1**、硬體計畫 **§4.0／🟢階段一** 對齊）；**§2.3～§2.4.1** 納入上述新硬體項目；**§2.3** **ProsKit BX-4112N×2、8PK-AS07-1（已購買）**；**§5.1～§5.2** 單板／雙麵包板並接接線圖；**§1** 補充並行節奏與 **Clean Architecture**；**§2.1B** 前後端層級；**§2.1A** **Nginx**；**§2.6** **LCD1602×2（Pico／Pi 5）**、**KY-016（已購買）** 接線；**§6.0** **Nginx／JWT** 與 **後端／前端（Clean Architecture）** 標註；**§6.0.1** **遙測圖表（前後端設計步驟）**；**§6.0.2** 第四階段為生產調優；MQTT 細節見 `Stage1-Stage3_Implementation_Roadmap_with_MQTT_Topic_Standard.md`。  
+> 基礎版本：Pico2WH-Pi5-IIoT-專案開發規格書 v4  
 > 環境：**開發端（WSL2 Ubuntu 22.04+）/ 生產端（Pi 5 64-bit）**
 
 ---
 
 ## 文件定位與 SoT（必讀）
 
-- 本文件（`v5.md`）是**全專案總規格**（硬體、韌體、前後端、部署與階段計畫）。
+- 本文件（`v5.1.md`）是**全專案總規格**（硬體、韌體、前後端、部署與階段計畫）。
 - 後端實作細節（分層、專案結構、套件、API 實作約束）以 `Pico2WH-Pi5-IIoT-專案開發規格書_v5_ASPNETCORE_4LAYER.md`（**v5.1**）為**後端 SoT**。
 - 若兩份文件對後端技術描述不一致，以 **ASP.NET Core 四層文件**為準。
 - `Ulfius` 在本文件中視為 **Legacy 歷史方案**註記；現行後端主線為 **ASP.NET Core (.NET 8) 四層架構**。
@@ -27,7 +28,7 @@
 - **端點設備**：Pico 2 WH（C + Pico SDK）。  
 - **除錯工具**：Raspberry Pi Debug Probe（CMSIS-DAP / SWD）。  
 - **責任分工（固定）**：**Pi 5** 負責全端系統（Frontend + Backend + MQTT Broker + PostgreSQL + Nginx）；**Pico 2 WH** 負責感測/告警 I/O（含 `Grove-MOSFET` PWM 輸出）。  
-- **實作節奏**：韌體 **階段一至三**（見 §6 與 `Pico2WH_Hardware_Plan_v3.md` §4）與 **Pi 5 前後端**為 **並行軌道**；詳見 **§6.0**。超出韌體交付之儀表與主機監控為 **第四階段**（§6.0.2）。MQTT topic 與驗收清單見 `Stage1-Stage3_Implementation_Roadmap_with_MQTT_Topic_Standard.md`。
+- **實作節奏**：韌體 **階段一至三**（見 §6 與 Pico2WH_Hardware_Plan_v3 §4）與 **Pi 5 前後端**為 **並行軌道**；詳見 **§6.0**。超出韌體交付之儀表與主機監控為 **第四階段**（§6.0.2）。MQTT topic 與驗收清單見 Stage1-Stage3_Implementation_Roadmap_with_MQTT_Topic_Standard。
 - **對外服務**：**客戶遠端檢視**（目標規模 **約 500 名使用者帳號**）經 **Nginx 反向代理**（TLS、upstream）對外提供 HTTPS；**Mosquitto／PGAdmin／PostgreSQL 埠不對公網開放**。細節見 **§2.1A**。
 - **應用架構**：**前端**與**後端**程式碼組織採 **Clean Architecture**（依賴向內、領域與框架分離）；層級約定見 **§2.1B**。階段並行實作見 **§6.0**（標題 **後端（Clean Architecture）**／**前端（Clean Architecture）**）。
 
@@ -50,6 +51,17 @@
 | 反向代理（對外 HTTPS） | **Nginx**（TLS 終止、`upstream` 至 backend API；靜態資源與 API 分流） |
 | 韌體開發 | Pico SDK + CMake + arm-none-eabi-gcc |
 | 燒錄除錯 | OpenOCD + Debug Probe |
+
+#### 2.1C 後端目錄樹（GitHub 實際結構）
+
+```text
+app/backend/
+├── sql/
+└── src/
+```
+
+- 目前後端 SQL 路徑：`app/backend/sql/`
+- 目前儲存庫尚未建立獨立後端腳本目錄（`app/backend/scripts/`）。
 
 ### 2.1A Nginx 反向代理與客戶遠端檢視（規模：約 500 人）
 
@@ -109,7 +121,7 @@
 
 **要點**：元件不直接拼 URL；**儀表與登入** 經同一用例邊界，便於測試與替換。
 
-### 2.2 硬體清單（彙整 `@pi/`、`@iot/` 全部圖片）
+### 2.2 硬體模組選型與規格
 
 #### 核心設備
 
@@ -149,7 +161,7 @@
 | AT24C256 EEPROM | 1 | I2C | 斷線暫存 |
 | DS3231 + AT24C32 RTC 模組 | 2 | I2C | RTC 位址 0x68 |
 | INA219 數位功率計（Gravity） | 1 | I2C | 電源電流/電壓監測 |
-| **Grove Mini PIR** 人體運動 | **1** | GPIO | **已購買**（`iot/2026-04-05 012821.png`）；**Pico `GPIO6`** 數位輸入，見 **§2.4.1** |
+| **Grove Mini PIR** 人體運動 | **1** | GPIO | **已購買**；**Pico `GPIO6`** 數位輸入，見 **§2.4.1** |
 | Sensirion **SCD41**（CO₂／溫／溼） | **1** | I2C | **已購買**（同上）；**`0x62`**，**Pico `I2C1`**（Hub 已滿），見 **§2.4.1** |
 | Grove-MOSFET 模組 | 1 | GPIO/PWM | 風扇 PWM 控速 |
 
@@ -175,7 +187,7 @@
 
 ### 2.2B 重複項目與虧損估算（移至獨立檔）
 
-- 重複清單、非重複清單與虧損估算已移至：`Hardware_Inventory_去重與虧損評估.md`
+- 重複清單、非重複清單與虧損估算已移至：Hardware_Inventory_去重與虧損評估
 - 本版自 **§2.2** 主清單移除之重複/備選項目：`BME280（CJMCU-280E）`、`Grove BME280`、`Grove Light Sensor v1.2`、`Grove LCD RGB Backlight`、`PIR 人體移動感測器（一般模組）`、`Grove LED Bar v2.0`、`旋轉編碼器模組`、`Grove 蜂鳴器（壓電）`、`主動式蜂鳴器驅動模組`、`單路 5V 繼電器模組`
 - 目前可視虧損估算：`NT$1,300`（以重複採購且未使用為前提）
 
@@ -190,7 +202,7 @@
 | Grove 4pin 通用線（無扣/母母，20cm） | 2 包（10 條） | Grove 佈線 |
 | Grove→DuPont 4x1p 母頭線（30cm） | 1 包（5 條） | Grove 對接一般模組 |
 | Grove→DuPont 4x1p 公頭線（20cm） | 2 包（10 條） | Grove 對接一般模組 |
-| **Grove→DuPont 4×1p 公頭線（20 cm，5 條／包，Seeed）** | **1 包** | **已購買**（`iot/2026-04-05 012821.png`）；供 **SCD41／Mini PIR** 接麵包板 |
+| **Grove→DuPont 4×1p 公頭線（20 cm，5 條／包，Seeed）** | **1 包** | **已購買**；供 **SCD41／Mini PIR** 接麵包板 |
 | Grove ↔ DuPont 線材（多種） | 多包 | 快速布線 |
 | T 型 GPIO 擴充板 + 排線 + 麵包板 | 1 組 | 原型開發 |
 | ProsKit BX-4112N 免焊麵包板（840 圓孔，可拼接） | **2** | **已購買**（PChome `DEDG2H-A900B35AV`，2026-04-05）；與硬體計畫 **§2.5.3** 雙板並接圖對齊 |
@@ -257,7 +269,7 @@
 
 > 關鍵檢查點：`DS3231` 與 `MPU-9250` 預設皆可為 `0x68`，須靠 **I2C0 / I2C1 分離**；LCD 典型 `0x27/0x3F` 與 RTC／EEPROM 通常不衝突，以 i2c scan 為準；**SCD41 固定 `0x62`**，與上述 **不衝突**。
 
-### 2.4.1 `iot/2026-04-05 012821.png`：採購、接線位置與實作步驟
+### 2.4.1 新增採購硬體（SCD41 / Grove Mini PIR / Grove→DuPont）：接線位置與實作步驟
 
 **採購內容**：**SCD41**×1、**Grove Mini PIR**×1、**Grove→DuPont 公頭線 20 cm**×1 包（5 條）。
 
@@ -273,7 +285,7 @@
 
 #### 接線確認清單（上電前／除錯時勾選）
 
-> 目的：確認 **`iot/2026-04-05 012821.png`** 三項採購已依本專案 **Dual-Bus** 規劃接入，**未**誤占 I2C0 Hub 或錯接電壓。
+> 目的：確認三項新增採購（SCD41、Grove Mini PIR、Grove→DuPont 公頭線）已依本專案 **Dual-Bus** 規劃接入，**未**誤占 I2C0 Hub 或錯接電壓。
 
 - [ ] **SCD41** 之 **SDA／SCL** 僅併入 **I2C1（GPIO2／GPIO3）**，與 **§2.4「I2C1 並聯」** 同一匯流排（DS3231／AT24C256／LCD1602），**未**接至 Hub 或 I2C0。
 - [ ] **SCD41** **VCC** 為 **3.3 V**（麵包板紅軌自 `Pin36`），絲印若標 **僅 3.3 V** 則 **禁止**誤接 5 V。
@@ -282,7 +294,7 @@
 - [ ] 上電後 **I2C1** 掃描可見 **`0x62`**（模組已接線且韌體／scan 模式允許時）；若無：先查 **SDA/SCL 是否誤接 GPIO4/5**、**共地**、**3.3 V**。
 - [ ] **PIR**：靜止與觸發時 **GPIO6** 位準／事件可區分（依模組為高有效或低有效；必要時對照模組說明與上拉設定）。
 
-**實作步驟（摘要）**：與 `Pico2WH_Hardware_Plan_v3.md` **§2.9** 一致——（1）ESD 與共地；（2）Grove 線對接麵包板；（3）上電前短路／極性檢查；（4）`i2c` 掃描確認 **`0x62`**；（5）Sensirion **SCD4x** 初始化與週期讀值；（6）**GPIO6** 讀取 PIR 或 IRQ；（7）**同一 `telemetry` topic** 之 JSON 依 **§2.4.2** 填入 **`co2_ppm`**／**`temperature_c_scd41`**／**`humidity_pct_scd41`**／**`pir_active`**，ingest 與 **§6.0.1** 圖表 API 對齊。  
+**實作步驟（摘要）**：與 Pico2WH_Hardware_Plan_v3 **§2.9** 一致——（1）ESD 與共地；（2）Grove 線對接麵包板；（3）上電前短路／極性檢查；（4）`i2c` 掃描確認 **`0x62`**；（5）Sensirion **SCD4x** 初始化與週期讀值；（6）**GPIO6** 讀取 PIR 或 IRQ；（7）**同一 `telemetry` topic** 之 JSON 依 **§2.4.2** 填入 **`co2_ppm`**／**`temperature_c_scd41`**／**`humidity_pct_scd41`**／**`pir_active`**，ingest 與 **§6.0.1** 圖表 API 對齊。  
 **與 BME680**：溫溼度可能重覆，韌體與儀表應 **標註感測器來源**（分鍵見 **§2.4.2**）；BME680 仍保留 **氣壓／VOC** 差異化。
 
 > **遙測／MQTT 契約**（不因匯流排上新增 SCD41 而另開 topic）：見 **§2.4.2**，並與 **§6.0**、**§6.0.1** 對齊。
@@ -294,7 +306,7 @@
 #### MQTT Topic（加入 SCD41／PIR 後**不變**）
 
 - **SCD41（I2C1 `0x62`）** 與 **Grove Mini PIR（GPIO6）** **不新增** MQTT topic、**不改** topic 層級模板。  
-- 韌體仍將感測值置於既有 **`telemetry`** 類訊息，後端訂閱樣式為 **`iiot/+/+/telemetry`**（**`site_id`／`device_id`** 由路徑中 `+` 匹配）；過渡期 **舊 topic 雙讀** 依 `Stage1-Stage3_Implementation_Roadmap_with_MQTT_Topic_Standard.md`。  
+- 韌體仍將感測值置於既有 **`telemetry`** 類訊息，後端訂閱樣式為 **`iiot/+/+/telemetry`**（**`site_id`／`device_id`** 由路徑中 `+` 匹配）；過渡期 **舊 topic 雙讀** 依 Stage1-Stage3_Implementation_Roadmap_with_MQTT_Topic_Standard。  
 - **語意**：Dual-Bus 僅影響 **Pico 上哪條線讀到資料**；**MQTT 路由** 仍由 **站臺／裝置** 決定，**不由**「是否掛 SCD41」分支。
 
 #### `telemetry` JSON：與 BME680 並存時之**分鍵**（v5 約定）
@@ -831,7 +843,7 @@ static inline void sh1106_set_pos(uint8_t page, uint8_t col) {
 
 ## 5. 完整接線 ASCII 拓樸圖（Dual-Bus + Power Rail）
 
-**採購對齊**：Pico 端原型已採購 **ProsKit BX-4112N ×2**（可拼接）、**8PK-AS07-1**（防靜電工作布）、**`iot/2026-04-05 012821.png`**：**SCD41**、**Grove Mini PIR**、**Grove→DuPont 公頭線**。下列 **§5.1** 為**單一麵包板等效**拓樸（邏輯主軸，保留）；**§5.2** 為**兩片 BX-4112N 並接**後之同一電氣關係（實體分區）。細部佈線、跨片跳線與 **SCD41／PIR** 步驟見 `Pico2WH_Hardware_Plan_v3.md` **§2.5.3**、**§2.9**；規格書 **§2.4.1**。
+**採購對齊**：Pico 端原型已採購 **ProsKit BX-4112N ×2**（可拼接）、**8PK-AS07-1**（防靜電工作布），以及新增感測/線材：**SCD41**、**Grove Mini PIR**、**Grove→DuPont 公頭線**。下列 **§5.1** 為**單一麵包板等效**拓樸（邏輯主軸，保留）；**§5.2** 為**兩片 BX-4112N 並接**後之同一電氣關係（實體分區）。細部佈線、跨片跳線與 **SCD41／PIR** 步驟見 Pico2WH_Hardware_Plan_v3 **§2.5.3**、**§2.9**；規格書 **§2.4.1**。
 
 ### 5.1 單一麵包板等效拓樸（保留）
 
@@ -928,9 +940,9 @@ Pico 2 WH on breadboard
 
 **與 §2.4 之銜接（避免硬體／後端各說各話）**：**Dual-Bus** 決定 **SCD41 在 I2C1、PIR 在 GPIO6**；**MQTT topic 模板不因該二模組而改變**（見 **§2.4.2**）。**`telemetry` JSON 鍵名、DB 儲存與 `metrics` 查詢** 以 **§2.4.2** 為準，下列步驟僅列工作項。
 
-### 6.0A 後端 Logging 架構（C 後端；不寫入 `/var/log/`）
+### 6.0A 後端 Logging 架構（ASP.NET Core 後端；不寫入 `/var/log/`）
 
-> 本節為**架構規範**，供 `app/backend` 實作；本次僅更新文件，不新增程式碼。
+> 本節為**架構規範**，供 `app/backend/` 實作；本次僅更新文件，不新增程式碼。
 
 #### 目標與路徑規範
 
@@ -988,7 +1000,7 @@ Pico 2 WH on breadboard
 
 **後端（Clean Architecture）**
 1. **執行環境**：Pi 5（或開發機）以 Docker Compose 啟動 Mosquitto、PostgreSQL、backend API 容器；網路與 volume 命名與本章部署一致。
-2. **MQTT 訂閱與 ingest**：訂閱 `iiot/+/+/telemetry`（及過渡期舊 topic 雙讀，策略見 `Stage1-Stage3_Implementation_Roadmap_with_MQTT_Topic_Standard.md` §2.3）；將 payload 寫入遙測表，鍵含 `device_id`、`device_time`、`is_sync_back`。**韌體若已啟用 SCD41／PIR**，ingest 與 schema 須能保存 **§2.4.2** 所列之 **`co2_ppm`**、**`temperature_c_scd41`**、**`humidity_pct_scd41`**、**`pir_active`**（及可選 **`motion`** 別名）；舊韌體無該等鍵時以 **可空／缺鍵** 處理。  
+2. **MQTT 訂閱與 ingest**：訂閱 `iiot/+/+/telemetry`（及過渡期舊 topic 雙讀，策略見 Stage1-Stage3_Implementation_Roadmap_with_MQTT_Topic_Standard §2.3）；將 payload 寫入遙測表，鍵含 `device_id`、`device_time`、`is_sync_back`。**韌體若已啟用 SCD41／PIR**，ingest 與 schema 須能保存 **§2.4.2** 所列之 **`co2_ppm`**、**`temperature_c_scd41`**、**`humidity_pct_scd41`**、**`pir_active`**（及可選 **`motion`** 別名）；舊韌體無該等鍵時以 **可空／缺鍵** 處理。  
 2.1 **MQTT Logging（`on_message_received`）**：每次接收訊息都必須依 **§6.0A** 記錄 `device_id`、`topic`、`payload`，且輸出至 Console + `log_file_path` 指定檔案（預設 `app/backend/logs/backend.log`，非 `/var/log/`）。
 2.2 **Logging 實作分層（必做）**：Logging 介面置於 Application/Use Cases 邊界，檔案/Console 寫入由 Infrastructure Adapter 實作；避免在 Domain 直接呼叫檔案 API。
 3. **REST API**：提供 `/api/v1/telemetry`、`/api/v1/logs` 之分頁／篩選查詢；回傳欄位與韌體 JSON 約定一致。
@@ -2062,7 +2074,7 @@ Pico 2 WH on breadboard
 - `POSTGRES_HOST=postgresql`
 - `MQTT_HOST=mqtt_broker`
 
-### 6.1 `iot/2026-04-05 012821.png`：新硬體整合之目標、驗收與接線對照
+### 6.1 新硬體整合（SCD41 / Grove Mini PIR / Grove→DuPont）之目標、驗收與接線對照
 
 **採購對照（本圖）**：Sensirion **SCD41**、Seeed **Grove Mini PIR**、**Grove→DuPont 4×1p 公頭線（20 cm，5 條／包）**。
 
@@ -2088,7 +2100,7 @@ Pico 2 WH on breadboard
 |------|------------|
 | 匯流排分工、腳位、**`0x62`** | **§2.4**、**§2.4.1**、本節上表 |
 | 單板／雙麵包板拓樸與 **GPIO6／SCD41** 文字圖 | **§5.1～§5.2**（**§5.3** 為 **MOSFET** 另述） |
-| 逐步線序、ESD、量測注意 | `Pico2WH_Hardware_Plan_v3.md` **§2.9** |
+| 逐步線序、ESD、量測注意 | Pico2WH_Hardware_Plan_v3 **§2.9** |
 
 ---
 
@@ -2174,20 +2186,9 @@ echo "[OK] flashed v5 dual-bus firmware"
 
 ## 8. 附錄
 
-### 8.1 圖片來源（本次重新掃描）
+### 8.1 歷史參考註記
 
-- `pi/2026-03-18 140954.png`
-- `pi/2026-03-18 141136.png`
-- `pi/2026-03-18 141516.png`
-- `pi/2026-03-20 144410.png`
-- `iot/2026-03-17 033328.png`
-- `iot/2026-03-27 002723.png`（含 INA219、Grove LCD RGB、BME280、6-Port Hub）
-- `iot/2026-03-27 002807.png`
-- `iot/2026-03-27 002917.png`
-- `iot/2026-03-30 203826.png`
-- `iot/2026-03-30 204902.png`
-- `iot/2026-04-05 012821.png`（**SCD41**、**Grove Mini PIR**、**Grove→DuPont 公頭線 20 cm**；對齊 **§2.4.1**、**§6.1**）
-- `iot/2026-04-02 165148.png`（歷史接線參考；主規格已改為 Hub Port2 接 MPU-9250，非 0.96 OLED）
+- 本文件已移除不存在於目前儲存庫中的圖片路徑引用，硬體與接線說明改以文字規格與章節交叉引用為準（見 **§2.4.1**、**§5.1～§5.2**、**§6.1**）。
 
 ### 8.2 MQTT 衝突預防（Client ID）
 

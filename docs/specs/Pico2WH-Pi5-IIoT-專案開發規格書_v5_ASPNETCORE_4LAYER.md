@@ -8,7 +8,7 @@
 > 端點、WSL／Pi5、PostgreSQL DDL、驗收準則與 v5 系列其他文件一致；以下為完整可實作敘述。
 
 > **SoT 聲明（Backend）**：凡後端分層、依賴方向、套件、API 實作約束，以本文件為準。  
-> **文件分工**：`Pico2WH-Pi5-IIoT-專案開發規格書_v5.md` 為全專案總規格（硬體/韌體/部署/階段）；本文件為後端實作細則。  
+> **文件分工**：`Pico2WH-Pi5-IIoT-專案開發規格書_v5.1.md` 為全專案總規格（硬體/韌體/部署/階段）；本文件為後端實作細則。  
 > **Legacy 聲明**：舊版 `Ulfius` 敘事僅作歷史參考，現行主線為 ASP.NET Core 四層架構。  
 > **補充（2026-04-18）**：讀取查詢可選 **Dapper**（與 EF Core 並存、組態切換），見 **§2.4.1a**；總規格對應 **§6.0.5 A.0**。  
 > **補充（2026-04-22）**：`ITelemetryRepository` 已轉型為**純讀取介面**；遙測寫入職責轉移至 `Application/Ingest` + `Persistence/Repositories/*IngestRepository`（EF Core）。
@@ -37,7 +37,7 @@
 
 > 專案前綴命名空間：`Pico2WH.Pi5.IIoT`。
 
-> **後端根目錄**：`app/backend`。其中 `src/` 放置 Solution 與四層專案、`sql/` 放置維運 SQL、`scripts/` 放置後端腳本。
+> **後端根目錄**：`app/backend`。目前 `src/` 放置 Solution 與四層專案、`sql/` 放置維運 SQL；`scripts/` 目錄可於後續需要時再建立。
 
 ### 2.0 六角架構（Ports & Adapters）與四層對應
 
@@ -84,8 +84,7 @@ app/backend/
 │       ├── Pico2WH.Pi5.IIoT.Application.Tests/
 │       ├── Pico2WH.Pi5.IIoT.Api.IntegrationTests/
 │       └── Pico2WH.Pi5.IIoT.Api.ContractTests/
-└── scripts/
-    └── (後端相關腳本路徑，例：wsl/pi5)
+└── (目前無 scripts/ 目錄；可按需補建)
 ```
 
 以下各節列出**各目錄**內建議檔名與職責（實作時可依需求增刪，但分層與命名應維持一致）。**路徑**中 `Infrastructure/` 以下子資料夾相對於 `Pico2WH.Pi5.IIoT.Infrastructure` 專案根。
@@ -244,12 +243,12 @@ app/backend/
 | `Pico2WH.Pi5.IIoT.Api.IntegrationTests/` | `WebApplicationFactory`、`*EndpointTests.cs` | 端到端／整合測試（`Microsoft.AspNetCore.Mvc.Testing`、Testcontainers）。 |
 | `Pico2WH.Pi5.IIoT.Api.ContractTests/` | 可選 | OpenAPI 契約或消費者驅動測試。 |
 
-### 2.7 `scripts`（同層於 `app/backend`）
+### 2.7 `scripts`（規劃）
 
 | 路徑 | 作用 |
 |------|------|
-| `app/backend/scripts/wsl/` | WSL 開發環境輔助腳本（還原、測試、遷移包裝）。 |
-| `app/backend/scripts/pi5/` | Pi 5 部署、systemd、compose 輔助腳本。 |
+| `app/backend/scripts/wsl/` | WSL 開發環境輔助腳本（還原、測試、遷移包裝；目錄目前未建立）。 |
+| `app/backend/scripts/pi5/` | Pi 5 部署、systemd、compose 輔助腳本（目錄目前未建立）。 |
 
 ### 2.8 四層依賴與專案參考（摘要）
 
@@ -470,7 +469,7 @@ dotnet ef database update --context <DbContextName> --project Pico2WH.Pi5.IIoT.I
 
 ### 4.1.2 資料表 DDL（dev / prod 雙 schema）
 
-> 依據 `Pico2WH-Pi5-IIoT-專案開發規格書_v5.md` 與 ASP.NET Core 版整併。  
+> 依據 `Pico2WH-Pi5-IIoT-專案開發規格書_v5.1.md` 與 ASP.NET Core 版整併。  
 > 採單一 PostgreSQL DB、雙 schema（`dev` / `prod`）隔離環境。  
 > 下列 SQL 可於 `cmd`（`psql`）、`WSL`、`Pi 5` 直接執行（語法相同）。
 
@@ -629,10 +628,10 @@ CREATE INDEX IF NOT EXISTS ix_app_logs_device_time
 #### D. 一次建立 dev / prod 的指令範本（cmd / WSL / Pi5）
 
 ```bash
-# 1) 將 DDL 存成檔案，例如 app/backend/scripts/sql/init_schema.sql
+# 1) 將 DDL 存成檔案，例如 app/backend/sql/init_schema.sql
 
 # 2) 以 psql 執行（cmd / WSL / Pi5 相同）
-psql "<PostgresConnectionString>" -v ON_ERROR_STOP=1 -f app/backend/scripts/sql/init_schema.sql
+psql "<PostgresConnectionString>" -v ON_ERROR_STOP=1 -f app/backend/sql/init_schema.sql
 ```
 
 #### E. 與 EF Core Migration 的關係
@@ -851,5 +850,5 @@ curl -k -H "Authorization: Bearer <access_token>" https://<pi-domain-or-ip>/api/
 | 文件 | 說明 |
 |------|------|
 | **本文件** | **ASP.NET Core 後端四層 SoT**（Domain / Application / Infrastructure / Api）。後端實作與 Code Review 以此為準。 |
-| `Pico2WH-Pi5-IIoT-專案開發規格書_v5.md` | 全專案總規格（硬體、韌體、部署、階段計畫）；後端細節請回指本文件。 |
+| `Pico2WH-Pi5-IIoT-專案開發規格書_v5.1.md` | 全專案總規格（硬體、韌體、部署、階段計畫）；後端細節請回指本文件。 |
 | Legacy（Ulfius 路徑） | 僅供歷史參考，不作為現行開發基準。 |
