@@ -145,47 +145,126 @@ flowchart LR
 
 ## 🔍 資料庫維運與可觀測性 (Database Observability)
 
-以下內容對應 `app/backend/sql/` 的維運 SQL 視圖，目標是在不改動應用邏輯的前提下，快速掌握 Data Ingestion Lag、Storage Efficiency 與 SLA 達成狀況。  
-目前實測樣本約 **18.4 萬筆**遙測資料，資料表總體積約 **164MB**，入庫延遲觀測約 **12s**。
+以下內容對應 `app/backend/sql/` 的維運 SQL 視圖，重點是以資料庫視角觀察 **Data Ingestion Lag**、**Storage Efficiency**、**SLA Completeness** 與 **Capacity Forecasting**。  
+目前基準數據約為 **18.4 萬筆**遙測資料、總體資料量約 **164MB**、入庫延遲實測約 **12s**。
+
+> 注意：`pgadmin-downsampling-core-prod.sql` 屬於核心查詢引擎（Downsampling/Read Path），不屬於本節「維運視圖（Observability Views）」範圍。
+
+### 維運圖表（Operations Charts）
+
+`db-performance-hourly-report.png`：用於觀察系統由 **Stress Test (1Hz)** 逐步回到 **Production (30s)** 的歷程，並比對每小時 `row_count`、`avg_network_ingest_lag`、`pir_noise_ratio`。  
+![DB Performance Hourly Report](docs/images/admin/db/db-performance-hourly-report.png)
+
+`db-storage-projection.png`：用於觀察 **18 萬筆級別**數據下的容量投影與儲存效率，協助評估未來 30 天的 **Storage Projection** 與 Index 成本。  
+![DB Storage Projection](docs/images/admin/db/db-storage-projection.png)
+
+### 維運 SQL 視圖（Observability Views）
 
 <details>
-<summary><strong>入庫健康度監控（Data Ingestion Lag）</strong></summary>
+<summary><strong>高階分析與預測：v_02_advanced_analytics_and_forecasting.sql</strong></summary>
 
-此視圖用來觀察最新資料時間與目前時間差，作為 Data Ingestion Lag 指標。  
-在目前環境中，實測可穩定追蹤到約 **12s** 延遲，適合作為 Broker/Consumer/DB 鏈路健康檢查基線。
+此檔整合三個維運面向：**Anomaly Detection**、**Capacity Forecasting**、**Connectivity Gap Analysis**。  
+可同時回答「數據品質是否異常」、「30 天容量是否足夠」、「裝置是否有長時間靜默」三類問題。
 
 ```sql
-CREATE OR REPLACE VIEW prod.v_monitor_status AS
+-- ==============================================================================
+-- 1. 環境數據異常偵測視圖 (Anomaly Detection)
+-- 用途：自動標記數值噴發或感測器異常（如 CO2 暴增、溫度不合理變化）
+-- ==============================================================================
+CREATE OR REPLACE VIEW prod.v_data_quality_anomalies AS
 SELECT 
-    COUNT(*) as total_count,
-    MAX(device_time) as last_data_received,
-    NOW() - MAX(device_time) as data_lag -- 顯示延遲多久
-FROM prod.telemetry_records;
+    device_id,
+    device_time,
+    co2_ppm,
+    temperature_c_scd41 AS temp_c,
+    CASE 
+        WHEN co2_ppm > 2500 THEN 'Critical: High CO2'
+        WHEN temperature_c_scd41 > 45 OR temperature_c_scd41 < 10 THEN 'Critical: Temp Anomaly'
+        WHEN humidity_pct_scd41 > 90 OR humidity_pct_scd41 < 10 THEN 'Warning: Humi Anomaly'
+        ELSE 'Healthy'
+    END AS data_health_status
+FROM prod.telemetry_records
+WHERE co2_ppm > 2500 OR temperature_c_scd41 > 45 OR temperature_c_scd41 < 10;
+
+-- ==============================================================================
+-- 2. 未來 30 天儲存增量預估 (Capacity Forecasting)
+-- 用途：基於過去 24 小時的寫入速度，預測下個月的硬碟空間需求
+-- ==============================================================================
+CREATE OR REPLACE VIEW prod.v_storage_projection_next_30d AS
+WITH daily_stats AS (
+    SELECT 
+        COUNT(*) AS daily_rows,
+        pg_total_relation_size('prod.telemetry_records') AS current_bytes
+    FROM prod.telemetry_records
+    WHERE device_time > NOW() - INTERVAL '24 hours'
+)
+SELECT 
+    pg_size_pretty(current_bytes) AS current_size,
+    (daily_rows * 30) AS projected_new_rows_30d,
+    pg_size_pretty(current_bytes + (current_bytes / NULLIF((SELECT COUNT(*) FROM prod.telemetry_records), 0) * daily_rows * 30)) AS projected_total_size_30d
+FROM daily_stats;
+
+-- ==============================================================================
+-- 3. 設備通訊間隔異常分析 (Connectivity Gap Analysis)
+-- 用途：找出通訊中斷超過 1 分鐘的事件，分析網路穩定性
+-- ==============================================================================
+CREATE OR REPLACE VIEW prod.v_network_gap_analysis AS
+WITH time_diffs AS (
+    SELECT 
+        device_time,
+        LEAD(device_time) OVER (ORDER BY device_time) AS next_time
+    FROM prod.telemetry_records
+)
+SELECT 
+    device_time AS gap_start,
+    next_time AS gap_end,
+    (next_time - device_time) AS silent_duration
+FROM time_diffs
+WHERE (next_time - device_time) > INTERVAL '1 minute'
+ORDER BY silent_duration DESC;
 ```
 
 </details>
 
 <details>
-<summary><strong>儲存效率分析（Storage Efficiency）</strong></summary>
+<summary><strong>系統效能監控：v_system_performance_hourly.sql</strong></summary>
 
-此視圖拆分 data_size 與 index_size，協助評估 Storage Efficiency 與索引膨脹風險。  
-在目前約 **164MB** 總體積場景下，Index 佔比實測約 **12%**，可作為後續 Index 調整與 VACUUM 策略的觀察基準。
+此視圖提供每小時 **System Performance** 指標，包含 `row_count`、`avg_network_ingest_lag`、`pir_noise_ratio`，並自動判定 `Stress Test (1Hz)` / `Transition / Mixed` / `Production (30s)` 模式。  
+對於排查壓測切換期、觀察 12s 級別延遲是否持續、判斷 PIR 噪訊比是否異常特別有價值。
 
 ```sql
-/* 索引與數據分析視圖 */
-CREATE OR REPLACE VIEW prod.v_storage_analysis AS
+CREATE OR REPLACE VIEW prod.v_system_performance_hourly AS
+WITH hourly_stats AS (
+    SELECT 
+        date_trunc('hour', device_time) AS hour_bucket,
+        COUNT(*) AS row_count,
+        ROUND(AVG(EXTRACT(EPOCH FROM (server_time - device_time)))::numeric, 2) AS avg_lag_sec,
+        COUNT(CASE WHEN pir_active = true THEN 1 END) AS pir_true_count
+    FROM prod.telemetry_records
+    GROUP BY 1
+)
 SELECT 
-    pg_size_pretty(pg_relation_size('prod.telemetry_records')) AS data_size,
-    pg_size_pretty(pg_total_relation_size('prod.telemetry_records') - pg_relation_size('prod.telemetry_records')) AS index_size;
+    hour_bucket,
+    row_count,
+    CASE 
+        WHEN row_count > 3000 THEN 'Stress Test (1Hz)'
+        WHEN row_count BETWEEN 150 AND 3000 THEN 'Transition / Mixed'
+        ELSE 'Production (30s)'
+    END AS data_density_mode,
+    avg_lag_sec || ' s' AS avg_network_ingest_lag,
+    pir_true_count AS pir_spikes,
+    ROUND((pir_true_count::numeric / NULLIF(row_count, 0)) * 100, 3) || ' %' AS pir_noise_ratio
+FROM hourly_stats
+ORDER BY hour_bucket DESC;
 ```
 
 </details>
 
 <details>
-<summary><strong>數據完整性驗證（SLA / Data Completeness）</strong></summary>
+<summary><strong>數據完整性驗證：v_daily_completeness.sql</strong></summary>
 
-此視圖按日與裝置彙總筆數，並以平均上報間隔自動判斷 `Stress Test (1Hz)` 或 `Production (30s)` 模式。  
-對目前約 **18.4 萬筆**資料，可用來驗證每日實際筆數是否符合預期 SLA，並快速定位缺漏時段或異常裝置。
+此視圖按日彙總 `actual_count` 與 `vs_standard_30s_pct`，並用平均上報間隔判斷 `operation_mode`。  
+在 **18.4 萬筆**資料規模下，可快速驗證每日 SLA 達成率，辨識掉點日期與異常裝置。
 
 ```sql
 -- 進階版：計算平均間隔來判斷模式
@@ -202,6 +281,54 @@ SELECT
 FROM prod.telemetry_records
 GROUP BY 1, 2
 ORDER BY 2 DESC;
+```
+
+</details>
+
+<details>
+<summary><strong>入庫健康度監控：v_ingest_health_monitor.sql</strong></summary>
+
+此視圖是 Data Pipeline 的即時健康探針，用 `MAX(device_time)` 與 `NOW()` 差值表示 `data_lag`。  
+目前可追蹤約 **12s** 延遲，適合作為 Broker / Consumer / DB 鏈路異常的第一層告警條件。
+
+```sql
+CREATE OR REPLACE VIEW prod.v_monitor_status AS
+SELECT 
+    COUNT(*) as total_count,
+    MAX(device_time) as last_data_received,
+    NOW() - MAX(device_time) as data_lag -- 顯示延遲多久
+FROM prod.telemetry_records;
+```
+
+</details>
+
+<details>
+<summary><strong>儲存效率分析：v_storage_analysis.sql</strong></summary>
+
+此視圖拆分 `data_size` 與 `index_size`，可計算 Index/Data 比例與評估 Index 膨脹。  
+在目前約 **164MB** 規模下，Index 佔比可維持約 **12%**，可作為調整索引策略與儲存成本控制依據。
+
+```sql
+/* 索引與數據分析視圖 */
+CREATE OR REPLACE VIEW prod.v_storage_analysis AS
+SELECT 
+    pg_size_pretty(pg_relation_size('prod.telemetry_records')) AS data_size,
+    pg_size_pretty(pg_total_relation_size('prod.telemetry_records') - pg_relation_size('prod.telemetry_records')) AS index_size;
+```
+
+</details>
+
+<details>
+<summary><strong>總體空間檢查：v_storage_total.sql</strong></summary>
+
+此視圖提供單一欄位 `total_size`，用於快速盤點 `prod.telemetry_records` 的物理空間佔用。  
+適合搭配 `v_storage_analysis` 與容量預估視圖一起使用，快速比對目前 **164MB** 是否持續成長。
+
+```sql
+/* 儲存成本監控視圖 */
+CREATE OR REPLACE VIEW prod.v_storage_total AS
+SELECT 
+    pg_size_pretty(pg_total_relation_size('prod.telemetry_records')) AS total_size;
 ```
 
 </details>
