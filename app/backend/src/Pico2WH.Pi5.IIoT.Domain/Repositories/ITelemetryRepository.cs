@@ -6,8 +6,6 @@ namespace Pico2WH.Pi5.IIoT.Domain.Repositories;
 /// <summary>遙測持久化埠（由 Infrastructure <c>Persistence/Repositories</c> 實作）。</summary>
 public interface ITelemetryRepository
 {
-    Task AddAsync(TelemetryReading reading, CancellationToken cancellationToken = default);
-
     Task<IReadOnlyList<TelemetryReading>> ListForDeviceAsync(
         DeviceId deviceId,
         DateTime fromUtc,

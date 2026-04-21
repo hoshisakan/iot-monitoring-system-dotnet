@@ -15,12 +15,6 @@ public sealed class TelemetryRepository : ITelemetryRepository
         _db = db;
     }
 
-    public async Task AddAsync(TelemetryReading reading, CancellationToken cancellationToken = default)
-    {
-        await _db.TelemetryReadings.AddAsync(reading, cancellationToken).ConfigureAwait(false);
-        await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-    }
-
     public async Task<IReadOnlyList<TelemetryReading>> ListForDeviceAsync(
         DeviceId deviceId,
         DateTime fromUtc,
