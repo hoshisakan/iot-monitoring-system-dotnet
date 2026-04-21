@@ -143,6 +143,71 @@ flowchart LR
 
 ---
 
+## 🔍 資料庫維運與可觀測性 (Database Observability)
+
+以下內容對應 `app/backend/sql/` 的維運 SQL 視圖，目標是在不改動應用邏輯的前提下，快速掌握 Data Ingestion Lag、Storage Efficiency 與 SLA 達成狀況。  
+目前實測樣本約 **18.4 萬筆**遙測資料，資料表總體積約 **164MB**，入庫延遲觀測約 **12s**。
+
+<details>
+<summary><strong>入庫健康度監控（Data Ingestion Lag）</strong></summary>
+
+此視圖用來觀察最新資料時間與目前時間差，作為 Data Ingestion Lag 指標。  
+在目前環境中，實測可穩定追蹤到約 **12s** 延遲，適合作為 Broker/Consumer/DB 鏈路健康檢查基線。
+
+```sql
+CREATE OR REPLACE VIEW prod.v_monitor_status AS
+SELECT 
+    COUNT(*) as total_count,
+    MAX(device_time) as last_data_received,
+    NOW() - MAX(device_time) as data_lag -- 顯示延遲多久
+FROM prod.telemetry_records;
+```
+
+</details>
+
+<details>
+<summary><strong>儲存效率分析（Storage Efficiency）</strong></summary>
+
+此視圖拆分 data_size 與 index_size，協助評估 Storage Efficiency 與索引膨脹風險。  
+在目前約 **164MB** 總體積場景下，Index 佔比實測約 **12%**，可作為後續 Index 調整與 VACUUM 策略的觀察基準。
+
+```sql
+/* 索引與數據分析視圖 */
+CREATE OR REPLACE VIEW prod.v_storage_analysis AS
+SELECT 
+    pg_size_pretty(pg_relation_size('prod.telemetry_records')) AS data_size,
+    pg_size_pretty(pg_total_relation_size('prod.telemetry_records') - pg_relation_size('prod.telemetry_records')) AS index_size;
+```
+
+</details>
+
+<details>
+<summary><strong>數據完整性驗證（SLA / Data Completeness）</strong></summary>
+
+此視圖按日與裝置彙總筆數，並以平均上報間隔自動判斷 `Stress Test (1Hz)` 或 `Production (30s)` 模式。  
+對目前約 **18.4 萬筆**資料，可用來驗證每日實際筆數是否符合預期 SLA，並快速定位缺漏時段或異常裝置。
+
+```sql
+-- 進階版：計算平均間隔來判斷模式
+CREATE OR REPLACE VIEW prod.v_daily_data_completeness AS
+SELECT 
+    device_id,
+    date_trunc('day', device_time) AS report_date,
+    COUNT(*) AS actual_count,
+    CASE 
+        WHEN (86400.0 / COUNT(*)) < 5 THEN 'Stress Test (1Hz)' 
+        ELSE 'Production (30s)' 
+    END AS operation_mode,
+    ROUND((COUNT(*) / 2880.0) * 100, 2) AS vs_standard_30s_pct
+FROM prod.telemetry_records
+GROUP BY 1, 2
+ORDER BY 2 DESC;
+```
+
+</details>
+
+---
+
 ## 技術棧（Technology Stack）
 
 > 目前程式碼 runtime 為 **.NET 8**（`*.csproj` 目標框架），並可平滑規劃至 .NET 9。
