@@ -1,0 +1,83 @@
+# IIoT Cross-Contract Guardrail
+
+本專案為三端協作 IIoT 系統：`app/firmware`、`app/backend`、`app/frontend`。任何涉及遙測欄位、MQTT topic、查詢指標（metrics）的調整，都視為跨端契約變更，必須同步處理。
+
+## 0) 現況落差快照（與規格 v5.1 對齊）
+
+- 已落地：後端四層架構（Domain/Application/Infrastructure/Api）。
+- 已落地：讀寫分離（EF Core Ingest Repository 寫入、Dapper Query 讀取）。
+- 尚未落地：Phase 4 Redis 快取（目前未見 Redis 快取實作代碼）；屬規劃項，新增時需遵守本規則第 4 節。
+
+## 1) 三端 Contract 同步（強制）
+
+當修改以下任一區域時，必須同步檢查三端：
+- 韌體發送：`app/firmware/main.c`、`app/firmware/src/mqtt_manager.c`、`app/firmware/include/mqtt_topics.h`
+- 後端 ingest/實體：`app/backend/src/**/TelemetryReading.cs`、`**/*TelemetryMqttIngestService.cs`、`**/*TelemetryIngestRepository.cs`
+- 前端解析：`app/frontend/src/monitoring/domain/entities/telemetry.ts`、`app/frontend/src/monitoring/infrastructure/repositories/HttpTelemetryRepository.ts`
+
+欄位或 topic 變更（新增/刪除/改名/型別變更）時，必須逐項核對：
+- payload 鍵名（snake_case）在三端一致
+- backend 寫入模型、DTO、查詢映射同步
+- frontend 型別、repository、圖表使用點同步
+- `/api/v1/telemetry/series` 的 `metric` 名稱與前端查詢參數同步
+
+若單次 PR 無法完成三端同步，必須在回報中列出待補清單與風險。
+
+## 2) 後端四層架構守門
+
+必須維持依賴方向：
+- Domain 不依賴 Application/Infrastructure/Api
+- Application 只依賴 Domain 抽象（介面）
+- Infrastructure 實作外部技術（EF Core / Dapper / MQTT / Docker / Logging）
+- Api 僅負責組裝、端點、middleware
+
+禁止：
+- 在 Domain 引入框架/資料庫/傳輸細節
+- 在 Application 直接依賴 DbContext、Dapper 具體查詢、HTTP 細節
+
+## 3) 讀寫分離守門（Backend）
+
+固定約束：
+- 寫入：`Application/Ingest` -> `*IngestRepository`（EF Core）
+- 讀取：`Infrastructure/Queries/*DapperQuery`（Dapper）
+- 不將查詢 SQL 或降採樣邏輯混入 ingest 寫入路徑
+- 不把寫入行為塞入 query handler/read repository
+
+目前關鍵讀取類（既有）：
+- `TelemetrySeriesDapperQuery`
+- `LogDapperQuery`
+- `UiEventsDapperQuery`
+
+## 4) Phase 4 Redis 緩存規範（預先約束）
+
+當開始導入 Redis 時，必須同時滿足：
+- 僅作快取/限流/短期狀態，不取代主資料來源（PostgreSQL）
+- 快取 key 需含 tenant/site/device 維度，避免跨租戶污染
+- 需定義 TTL、失效策略、回退策略（Redis 不可用時可直接回 DB）
+- 必須補上 observability：命中率、失效率、回退次數
+- 變更 `docker-compose.yml` 與啟動腳本後，仍需保持可一鍵啟動
+
+## 5) 前端模組化守門
+
+維持 `domain / application / infrastructure / presentation` 分層：
+- 頁面元件不得直接拼 API URL 或硬編 telemetry 鍵名
+- 型別集中於 domain，資料存取集中於 infrastructure repository
+- 契約鍵名更新時，先改 domain 型別，再改 repository/useCase/page
+
+## 6) 維運自動化守門
+
+涉及部署/服務相依時必檢：
+- `docker-compose.yml`
+- `scripts/setup/pi5/*.sh`
+- `scripts/setup/nginx/*.sh`
+- `scripts/setup/mqtt/*.sh`
+
+原則：不引入需人工補洞的隱含步驟；若新增必要步驟，需同步更新 script 或 README。
+
+## 7) 變更回報最小格式（必填）
+
+- 本次變更的契約欄位/Topic/metric
+- firmware/backend/frontend 各自改動檔案
+- 是否觸及四層邊界與讀寫分離（是/否 + 理由）
+- 相容性影響（舊裝置/舊資料/舊前端）
+- 驗證方式（ingest、API、前端畫面、必要時 compose 啟動）
