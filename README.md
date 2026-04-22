@@ -125,6 +125,46 @@ flowchart LR
 
 ---
 
+## 韌體硬體接線配置（Firmware Wiring Map）
+
+```text
+                      +--------------------------------------+
+                      |        Raspberry Pi Pico 2 W         |
+                      |                                      |
+                      | I2C0 SDA: GP4 -------------------+   |
+                      | I2C0 SCL: GP5 ------------------+ |   |
+                      |                                  | |   |
+                      | I2C1 SDA: GP2 ---------------+   | |   |
+                      | I2C1 SCL: GP3 --------------+ |   | |   |
+                      |                              | |   | |   |
+                      | PIR GPIO: GP6 <------------ SIG|   | |   |
+                      | 3V3 -------------------------+--+---+-+-+--> VCC rail
+                      | GND -------------------------+--+---+-+-+--> GND rail
+                      +--------------------------------------+ 
+                                                     | | | |
+I2C0 bus (GP4/GP5):                                 | | | +--> SH1106 OLED (0x3C)
+  - BME680 (0x76)                                   | | +----> TSL2561 (0x29)
+  - MPU9250 (0x68, AD0 high = 0x69)                 | +------> PAJ7620 (0x73, optional)
+                                                     |
+I2C1 bus (GP2/GP3):
+  - DS3231 RTC (commonly 0x68)
+  - AT24C256 EEPROM (0x50)
+  - SCD41 (0x62)
+  - LCD1602 + PCF8574 backpack (0x27 / 0x3F)
+
+Digital input:
+  - PIR module OUT/SIG -> GP6 (PIR_TEST_GPIO)
+```
+
+### Firmware Pin Summary
+
+- `I2C0`：`GP4(SDA)` / `GP5(SCL)`，預設 100 kHz，主要掛環境感測、OLED、IMU、選配手勢模組。
+- `I2C1`：`GP2(SDA)` / `GP3(SCL)`，預設 100 kHz，主要掛 RTC、EEPROM、SCD41、LCD1602。
+- `PIR`：`GP6`，以數位輸入方式讀取；`PIR_TEST_PULL_UP` / `PIR_TEST_ACTIVE_HIGH` 由 `secrets.h` 控制。
+- `Power`：全模組以 3.3V 與共地為基準（避免 5V 直接進入 Pico GPIO）。
+
+---
+
 ## Database Schema 與索引策略
 
 核心資料表：`prod.telemetry_records`
