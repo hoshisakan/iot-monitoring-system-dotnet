@@ -10,6 +10,20 @@
 
 ---
 
+## 🚀 Live Demo
+
+本系統已實際部署於 **Raspberry Pi 5**，並串接 **Pico 2 WH** 實體感測器進行即時資料採集與監控展示。
+
+| Item | Value |
+|---|---|
+| URL | [https://www.iiot-pi5-monitor.com](https://www.iiot-pi5-monitor.com) |
+| Test Account | `customer` |
+| Test Password | `Pico2WH_Deploy_Customer_Init_Rv4!nT8w` |
+
+> **此帳號僅具備唯讀 (Read-only) 權限，僅供檢視圖表與數據，無法操作硬體控制指令。**
+
+---
+
 ## 專案亮點（Executive Summary）
 
 - 已在真實資料條件下驗證 **116,230 筆**高頻時序資料。
